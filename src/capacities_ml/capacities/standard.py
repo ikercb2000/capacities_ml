@@ -1,17 +1,17 @@
 # imports
-from typing import Tuple
+from dataclasses import dataclass
 
 # modules
 from capacities_ml.capacities.base import Capacity
 from capacities_ml.capacities.types import CapacityMap
-from capacities_ml.capacities.validation import check_k_additivity, check_monotonicity
+from capacities_ml.capacities.validation import check_monotonicity
 
-# k-additive capacities
-class KAdditiveCapacity(Capacity):
-    k: int
-    subset_values: CapacityMap | None
+# standard capacity
+@dataclass
+class StandardCapacity(Capacity):
+    subset_values: CapacityMap
     n_features: int
-    feature_names: Tuple[str]
+    feature_names: tuple[str, ...]
 
     def value(self, subset):
         return super().value(subset)
