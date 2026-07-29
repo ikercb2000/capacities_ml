@@ -24,6 +24,8 @@ def mobius_transform(capacities: CapacityMap, n_features: int):
     """
     Computes the Möbius transform representation for all coalitions.
     """
+    del n_features
+
     mobius_rep = []
     for cap in capacities:
         subsets = powerset(cap.coalition)
@@ -32,7 +34,7 @@ def mobius_transform(capacities: CapacityMap, n_features: int):
             sub_value = capacities.get_value(sub)
             if sub_value is None:
                 raise ValueError(f"Missing coalition in capacity map: {set(sub)}.")
-            mobius_coef += ((-1) ** (n_features - len(sub))) * sub_value
+            mobius_coef += ((-1) ** (len(cap.coalition) - len(sub))) * sub_value
         mobius_rep.append(CoalitionValue(cap.coalition, mobius_coef))
     return MobiusMap(mobius_coefficients=mobius_rep)
 
