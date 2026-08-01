@@ -11,36 +11,29 @@ from capacities_ml.integrals.utils import (
     mobius_masks_and_coefficients,
 )
 
-
+# matrix-like choquet integral
 def batch_choquet_integral(X: np.ndarray, capacity: Capacity) -> np.ndarray:
     """
     Evaluate the discrete Choquet integral row by row.
     """
     matrix = as_matrix(X)
     n_samples, n_features = matrix.shape
-
     if n_features != capacity.n_features:
         raise ValueError(
             f"The capacity expects {capacity.n_features} features, but X has {n_features}."
         )
 
-    order = np.argsort(matrix,axis=1,kind="stable")
-    sorted_X = np.take_along_axis(matrix, order, axis=1)
+    order = np.argsort(matrix,axis=1,kind="stable") # indices in order
+    sorted_X = np.take_along_axis(matrix, order, axis=1) # order inside matrix
     previous_values = np.concatenate(
         [
             np.zeros((n_samples, 1), dtype=float),
             sorted_X[:, :-1],
         ],
         axis=1,
-    )
+    ) # previous values to compute difference for integral
     sorted_feature_bits = 1 << order
-    coalition_masks = np.flip(
-        np.cumsum(
-            np.flip(sorted_feature_bits, axis=1),
-            axis=1,
-        ),
-        axis=1,
-    )
+    coalition_masks = np.flip(np.cumsum(np.flip(sorted_feature_bits, axis=1),axis=1),axis=1)
     values_by_mask = capacity_values_by_mask(capacity)
     coalition_values = values_by_mask[coalition_masks]
     return np.einsum("ti,ti->t", sorted_X - previous_values, coalition_values)

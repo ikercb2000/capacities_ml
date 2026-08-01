@@ -12,7 +12,7 @@ def ordered_choquet(capacity: Capacity, x: np.ndarray) -> float:
     """
     vector = as_vector(x)
     permutation = np.argsort(vector)
-    sorted_x = vector[permutation]
+    sorted_x = vector[permutation] # ordered vector
 
     choquet_value = 0.0
     previous = 0.0
@@ -20,12 +20,10 @@ def ordered_choquet(capacity: Capacity, x: np.ndarray) -> float:
     for position, value in enumerate(sorted_x):
         coalition = frozenset(int(index) for index in permutation[position:])
         capacity_value = capacity.subset_values.get_value(coalition)
-
         if capacity_value is None:
             raise ValueError(
                 f"Missing coalition in capacity map: {set(coalition)}."
             )
-
         choquet_value += (value - previous) * capacity_value
         previous = value
 
