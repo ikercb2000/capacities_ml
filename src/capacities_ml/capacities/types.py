@@ -1,17 +1,17 @@
 # imports
 from collections.abc import Iterable, Iterator, Set as AbstractSet
-from dataclasses import dataclass, field
-from typing import Dict, FrozenSet, List
+from dataclasses import InitVar, dataclass, field
 
 
-# capacity value
-@dataclass(frozen=True)
+# coalition value
+@dataclass
 class CoalitionValue:
-    coalition: FrozenSet[int]
+    coalition: frozenset[int]
     value: float
 
-    def __post_init__(self):
-        object.__setattr__(self, "coalition", frozenset(self.coalition))
+    def __post_init__(self) -> None:
+        self.coalition = frozenset(self.coalition)
+        self.value = float(self.value)
 
     def __str__(self):
         return f"Coalition {set(self.coalition)} with value {self.value}"
@@ -19,27 +19,40 @@ class CoalitionValue:
 # coalition map main class
 @dataclass
 class CoalitionMap:
-    lookup_dict: Dict[FrozenSet[int], float] = field(init=False, repr=False)
+    lookup_dict: dict[frozenset[int], float] = field(init=False, repr=False)
 
     def __len__(self) -> int:
-        return len(self.coalitions)
+        return sum(1 for _ in self)
 
     def __iter__(self) -> Iterator[CoalitionValue]:
-        return iter(self.coalitions)
+        return (
+            CoalitionValue(coalition, value)
+            for coalition, value in self.lookup_dict.items()
+        )
 
-    def str_map(self) -> Dict[str, float]:
+    @property
+    def coalitions(self) -> tuple[CoalitionValue, ...]:
+        return tuple(self)
+
+    def str_map(self) -> dict[str, float]:
         return {
             str(set(coalition)): value
             for coalition, value in self.lookup_dict.items()
         }
 
-    def to_lookup(self) -> Dict[FrozenSet[int], float]:
+    def to_lookup(self) -> dict[frozenset[int], float]:
         return dict(self.lookup_dict)
 
     def get_value(self, subset: AbstractSet[int]) -> float | None:
         return self.lookup_dict.get(frozenset(subset))
 
-    def get_coalition(self, value: float) -> List[FrozenSet[int]]:
+    def set_value(self, coalition: AbstractSet[int], value: float) -> None:
+        self.lookup_dict[frozenset(coalition)] = float(value)
+
+    def remove_value(self, coalition: AbstractSet[int]) -> None:
+        del self.lookup_dict[frozenset(coalition)]
+
+    def get_coalition(self, value: float) -> list[frozenset[int]]:
         return [
             coalition
             for coalition, coalition_value in self.lookup_dict.items()
@@ -50,14 +63,14 @@ class CoalitionMap:
 # capacity mapping
 @dataclass
 class CapacityMap(CoalitionMap):
-    capacities: Iterable[CoalitionValue]
-    coalitions: List[CoalitionValue] = field(init=False, repr=False)
+    """Mutable, unvalidated tabular values of a set function."""
 
-    def __post_init__(self):
-        self.coalitions = list(self.capacities)
+    capacities: InitVar[Iterable[CoalitionValue]]
+
+    def __post_init__(self, capacities: Iterable[CoalitionValue]) -> None:
         self.lookup_dict = {frozenset(): 0.0}
 
-        for coalition_value in self.coalitions:
+        for coalition_value in capacities:
             coalition = coalition_value.coalition
 
             if not coalition:
@@ -68,27 +81,23 @@ class CapacityMap(CoalitionMap):
             if coalition in self.lookup_dict:
                 raise ValueError(f"Duplicate coalition found: {set(coalition)}.")
 
-            self.lookup_dict[coalition] = float(coalition_value.value)
+            self.set_value(coalition, coalition_value.value)
 
-        self.capacities = self.coalitions
+    def __iter__(self) -> Iterator[CoalitionValue]:
+        return (
+            CoalitionValue(coalition, value)
+            for coalition, value in self.lookup_dict.items()
+            if coalition
+        )
 
+    def set_value(self, coalition: AbstractSet[int], value: float) -> None:
+        frozen_coalition = frozenset(coalition)
+        if not frozen_coalition:
+            raise ValueError("The empty coalition always has value zero.")
+        super().set_value(frozen_coalition, value)
 
-# möbius mapping
-@dataclass
-class MobiusMap(CoalitionMap):
-    mobius_coefficients: Iterable[CoalitionValue]
-    coalitions: List[CoalitionValue] = field(init=False, repr=False)
-
-    def __post_init__(self):
-        self.coalitions = list(self.mobius_coefficients)
-        self.lookup_dict = {}
-
-        for coalition_value in self.coalitions:
-            coalition = coalition_value.coalition
-
-            if coalition in self.lookup_dict:
-                raise ValueError(f"Duplicate coalition found: {set(coalition)}.")
-
-            self.lookup_dict[coalition] = float(coalition_value.value)
-
-        self.mobius_coefficients = self.coalitions
+    def remove_value(self, coalition: AbstractSet[int]) -> None:
+        frozen_coalition = frozenset(coalition)
+        if not frozen_coalition:
+            raise ValueError("The empty coalition cannot be removed.")
+        super().remove_value(frozen_coalition)

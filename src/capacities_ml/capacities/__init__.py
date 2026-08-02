@@ -1,11 +1,8 @@
+from capacities_ml.capacities.capacities import Capacity, VariableUniverse
 from capacities_ml.capacities.k_additive import KAdditiveCapacity
-from capacities_ml.capacities.standard import StandardCapacity
-from capacities_ml.capacities.types import CapacityMap, CoalitionValue, MobiusMap
 
 __all__ = [
-    "CapacityMap",
-    "CoalitionValue",
+    "Capacity",
     "KAdditiveCapacity",
-    "MobiusMap",
-    "StandardCapacity",
+    "VariableUniverse",
 ]
