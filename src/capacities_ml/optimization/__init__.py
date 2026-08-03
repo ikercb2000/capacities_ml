@@ -1,4 +1,3 @@
-# imports
 from capacities_ml.optimization.optimizer import Optimizer, OptimizerBackend
 from capacities_ml.optimization.problem import (
     CvxpyOptimizationProblem,
