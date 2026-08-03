@@ -68,7 +68,7 @@ def test_capacity_and_its_internal_map_are_mutable():
     )
 
     capacity.universe = VariableUniverse(("x0", "x1", "x2"))
-    capacity._subset_values.set_value({0}, 0.9)
+    capacity.values.set_value({0}, 0.9)
 
     assert capacity.universe.n_vars == 3
     assert capacity.value({0}) == 0.9

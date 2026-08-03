@@ -78,4 +78,4 @@ class KAdditiveCapacity(Capacity):
 
     def validate(self) -> None:
         super().validate()
-        check_k_additivity(self._subset_values, self.k, self.n_vars)
+        check_k_additivity(self.values, self.k, self.n_vars)

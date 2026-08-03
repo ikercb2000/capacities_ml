@@ -48,7 +48,7 @@ class Capacity:
     def __post_init__(self, values: Mapping[CoalitionInput, float]) -> None:
         if not isinstance(self.universe, VariableUniverse):
             raise TypeError("universe must be a VariableUniverse instance.")
-        self._subset_values = CapacityMap(
+        self.values = CapacityMap(
             capacities=[
                 CoalitionValue(normalize_coalition(self.universe, coalition), value)
                 for coalition, value in values.items()
@@ -67,7 +67,7 @@ class Capacity:
     def value(self, coalition: CoalitionInput) -> float:
         """Return the value of a coalition expressed by names or indices."""
         normalized_coalition = normalize_coalition(self.universe, coalition)
-        value = self._subset_values.get_value(normalized_coalition)
+        value = self.values.get_value(normalized_coalition)
         if value is None:
             raise KeyError(f"Unknown coalition: {coalition}.")
         return value
@@ -76,12 +76,12 @@ class Capacity:
         """Return the tabular capacity values keyed by variable names."""
         return {
             named_coalition(self.universe, coalition): value
-            for coalition, value in self._subset_values.lookup_dict.items()
+            for coalition, value in self.values.lookup_dict.items()
         }
 
     def validate(self) -> None:
         """Check the mathematical invariants of the capacity."""
         check_monotonicity(
-            self._subset_values,
+            self.values,
             frozenset(range(self.n_vars)),
         )

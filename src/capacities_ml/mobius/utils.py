@@ -48,7 +48,7 @@ def mobius_transform(capacity: Capacity) -> MobiusRepresentation:
     if not isinstance(capacity, Capacity):
         raise TypeError("capacity must be a Capacity instance.")
 
-    coefficient_map = _mobius_transform_map(capacity._subset_values)
+    coefficient_map = _mobius_transform_map(capacity.values)
     return MobiusRepresentation(
         universe=capacity.universe,
         coefficients=coefficient_map.to_lookup(),

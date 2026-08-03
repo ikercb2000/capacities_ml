@@ -45,7 +45,7 @@ def capacity_values_by_mask(capacity: Capacity) -> np.ndarray:
     values = np.empty(1 << n_features, dtype=float)
     values[0] = 0.0
 
-    for coalition_value in capacity._subset_values:
+    for coalition_value in capacity.values:
         mask = subset_encoding(
             coalition_value.coalition,
             n_features,
