@@ -1,43 +1,25 @@
-from dataclasses import dataclass
-
 import numpy as np
 
-from capacities_ml.capacities.base import Capacity
-from capacities_ml.capacities.mobius import mobius_transform
-from capacities_ml.capacities.types import CapacityMap, CoalitionValue
+from capacities_ml.capacities import (
+    Capacity,
+    VariableUniverse,
+)
+from capacities_ml.mobius import (
+    MobiusRepresentation,
+    inverse_mobius_transform,
+    mobius_transform,
+)
 from capacities_ml.integrals.choquet import mobius_choquet, ordered_choquet
 
 
-@dataclass
-class DummyCapacity(Capacity):
-    subset_values: CapacityMap
-    n_features: int
-    feature_names: tuple[str, ...]
-
-    def value(self, subset):
-        return super().value(subset)
-
-    def values(self):
-        return super().values()
-
-    def mobius_rep(self):
-        return super().mobius_rep()
-
-    def validate(self):
-        return None
-
-
-def build_capacity() -> DummyCapacity:
-    return DummyCapacity(
-        subset_values=CapacityMap(
-            capacities=[
-                CoalitionValue(frozenset({0}), 0.2),
-                CoalitionValue(frozenset({1}), 0.5),
-                CoalitionValue(frozenset({0, 1}), 1.0),
-            ]
-        ),
-        n_features=2,
-        feature_names=("x0", "x1"),
+def build_capacity() -> Capacity:
+    return Capacity(
+        universe=VariableUniverse(("x0", "x1")),
+        values={
+            ("x0",): 0.2,
+            ("x1",): 0.5,
+            ("x0", "x1"): 1.0,
+        },
     )
 
 
@@ -55,15 +37,55 @@ def test_mobius_choquet_matches_ordered_choquet():
     x = np.array([3.0, 1.0])
 
     ordered_value = ordered_choquet(capacity, x)
-    mobius_value = mobius_choquet(capacity, x)
+    mobius_rep = mobius_transform(capacity)
+    mobius_value = mobius_choquet(mobius_rep, x)
 
     assert np.isclose(mobius_value, ordered_value)
 
 
 def test_mobius_transform_recovers_expected_singletons():
     capacity = build_capacity()
-    mobius_rep = mobius_transform(capacity.subset_values, n_features=2)
+    mobius_rep = mobius_transform(capacity)
 
-    assert np.isclose(mobius_rep.get_value({0}), 0.2)
-    assert np.isclose(mobius_rep.get_value({1}), 0.5)
-    assert np.isclose(mobius_rep.get_value({0, 1}), 0.3)
+    assert mobius_rep.universe is capacity.universe
+    assert np.isclose(mobius_rep.value({0}), 0.2)
+    assert np.isclose(mobius_rep.value({1}), 0.5)
+    assert np.isclose(mobius_rep.value({0, 1}), 0.3)
+
+
+def test_inverse_mobius_transform_expands_a_sparse_representation():
+    universe = VariableUniverse(("x0", "x1", "x2"))
+    mobius_rep = MobiusRepresentation(
+        universe=universe,
+        coefficients={
+            ("x0",): 0.2,
+            ("x1",): 0.3,
+            ("x2",): 0.1,
+            ("x0", "x1"): 0.1,
+            ("x0", "x2"): 0.1,
+            ("x1", "x2"): 0.2,
+        },
+    )
+
+    capacity = inverse_mobius_transform(mobius_rep)
+
+    assert capacity.universe is universe
+    assert np.isclose(capacity.value({0, 1, 2}), 1.0)
+
+
+def test_mobius_representation_supports_names_and_sparse_coefficients():
+    mobius_rep = MobiusRepresentation(
+        universe=VariableUniverse(("price", "quality")),
+        coefficients={
+            "price": 0.2,
+            ("price", "quality"): 0.3,
+        },
+    )
+
+    assert mobius_rep.value("price") == 0.2
+    assert mobius_rep.value({0, "quality"}) == 0.3
+    assert mobius_rep.value("quality") == 0.0
+    assert mobius_rep.to_named_dict() == {
+        ("price",): 0.2,
+        ("price", "quality"): 0.3,
+    }

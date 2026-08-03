@@ -1,53 +1,29 @@
-from dataclasses import dataclass
-
 import numpy as np
 import pytest
 
-from capacities_ml.capacities.base import Capacity
-from capacities_ml.capacities.types import CapacityMap, CoalitionValue
+from capacities_ml.capacities.capacities import Capacity, VariableUniverse
+from capacities_ml.mobius import mobius_transform
 from capacities_ml.integrals.batch_integrals import (
     batch_choquet_integral,
     batch_choquet_integral_mobius,
-    indices_from_mask,
     mobius_design_matrix,
 )
 from capacities_ml.integrals.choquet import mobius_choquet, ordered_choquet
+from capacities_ml.integrals.utils import coalition_indices
 
 
-@dataclass
-class DummyCapacity(Capacity):
-    subset_values: CapacityMap
-    n_features: int
-    feature_names: tuple[str, ...]
-
-    def value(self, subset):
-        return super().value(subset)
-
-    def values(self):
-        return super().values()
-
-    def mobius_rep(self):
-        return super().mobius_rep()
-
-    def validate(self):
-        return None
-
-
-def build_capacity() -> DummyCapacity:
-    return DummyCapacity(
-        subset_values=CapacityMap(
-            capacities=[
-                CoalitionValue(frozenset({0}), 0.2),
-                CoalitionValue(frozenset({1}), 0.3),
-                CoalitionValue(frozenset({2}), 0.4),
-                CoalitionValue(frozenset({0, 1}), 0.6),
-                CoalitionValue(frozenset({0, 2}), 0.7),
-                CoalitionValue(frozenset({1, 2}), 0.8),
-                CoalitionValue(frozenset({0, 1, 2}), 1.0),
-            ]
-        ),
-        n_features=3,
-        feature_names=("x0", "x1", "x2"),
+def build_capacity() -> Capacity:
+    return Capacity(
+        universe=VariableUniverse(("x0", "x1", "x2")),
+        values={
+            ("x0",): 0.2,
+            ("x1",): 0.3,
+            ("x2",): 0.4,
+            ("x0", "x1"): 0.6,
+            ("x0", "x2"): 0.7,
+            ("x1", "x2"): 0.8,
+            ("x0", "x1", "x2"): 1.0,
+        },
     )
 
 
@@ -69,13 +45,13 @@ def test_batch_choquet_integral_matches_rowwise_ordered_choquet():
     assert np.allclose(batch_values, rowwise_values)
 
 
-def test_indices_from_mask_returns_expected_indices():
-    assert indices_from_mask(6, 3) == (1, 2)
+def test_coalition_indices_returns_expected_indices():
+    assert coalition_indices(frozenset({1, 2}), 3) == (1, 2)
 
 
-def test_indices_from_mask_rejects_empty_coalition():
+def test_coalition_indices_rejects_empty_coalition():
     with pytest.raises(ValueError, match="empty coalition"):
-        indices_from_mask(0, 3)
+        coalition_indices(frozenset(), 3)
 
 
 def test_mobius_design_matrix_matches_expected_example():
@@ -85,9 +61,16 @@ def test_mobius_design_matrix_matches_expected_example():
             [0.7, 0.4, 0.9],
         ]
     )
-    coalition_masks = (1, 2, 4, 3, 5, 6)
+    coalitions = (
+        frozenset({0}),
+        frozenset({1}),
+        frozenset({2}),
+        frozenset({0, 1}),
+        frozenset({0, 2}),
+        frozenset({1, 2}),
+    )
 
-    design = mobius_design_matrix(X, coalition_masks)
+    design = mobius_design_matrix(X, coalitions)
 
     expected = np.array(
         [
@@ -108,9 +91,10 @@ def test_batch_choquet_integral_mobius_matches_rowwise_mobius_choquet():
         ]
     )
 
-    batch_values = batch_choquet_integral_mobius(X, capacity)
+    mobius_rep = mobius_transform(capacity)
+    batch_values = batch_choquet_integral_mobius(X, mobius_rep)
     rowwise_values = np.array(
-        [mobius_choquet(capacity, row) for row in X],
+        [mobius_choquet(mobius_rep, row) for row in X],
         dtype=float,
     )
 

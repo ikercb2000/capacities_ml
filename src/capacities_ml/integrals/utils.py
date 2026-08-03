@@ -1,11 +1,12 @@
 # imports
-from collections.abc import Sequence
+from collections.abc import Set
 
 import numpy as np
 
 # modules
-from capacities_ml.capacities.base import Capacity
-from capacities_ml.capacities.utils import subset_decoding, subset_encoding
+from capacities_ml.capacities.capacities import Capacity
+from capacities_ml.capacities.utils import subset_encoding
+from capacities_ml.mobius import MobiusRepresentation
 
 # transform array as vector
 def as_vector(x: np.ndarray) -> np.ndarray:
@@ -19,6 +20,7 @@ def as_vector(x: np.ndarray) -> np.ndarray:
     return vector
 
 
+# transform array as matrix
 def as_matrix(X: np.ndarray) -> np.ndarray:
     """
     Convert the input into a two-dimensional numeric matrix.
@@ -34,15 +36,16 @@ def as_matrix(X: np.ndarray) -> np.ndarray:
     return matrix
 
 
+# capacity values by bitmask
 def capacity_values_by_mask(capacity: Capacity) -> np.ndarray:
     """
     Return the capacity values indexed by subset bitmasks.
     """
-    n_features = capacity.n_features
+    n_features = capacity.n_vars
     values = np.empty(1 << n_features, dtype=float)
     values[0] = 0.0
 
-    for coalition_value in capacity.subset_values:
+    for coalition_value in capacity._subset_values:
         mask = subset_encoding(
             coalition_value.coalition,
             n_features,
@@ -52,59 +55,35 @@ def capacity_values_by_mask(capacity: Capacity) -> np.ndarray:
     return values
 
 
-def mobius_masks_and_coefficients(
-    capacity: Capacity,
-    coalition_masks: Sequence[int] | None = None,
-) -> tuple[tuple[int, ...], np.ndarray]:
+# mobius terms and coefficients
+def mobius_coalitions_and_coefficients(mobius_rep: MobiusRepresentation) -> tuple[tuple[frozenset[int], ...], np.ndarray]:
     """
-    Return aligned coalition masks and Möbius coefficients.
+    Return aligned non-empty coalitions and Möbius coefficients.
     """
-    mobius_rep = capacity.mobius_rep()
-
-    if coalition_masks is None:
-        masks = tuple(
-            subset_encoding(coefficient.coalition, capacity.n_features)
-            for coefficient in mobius_rep
-        )
-        coefficients = np.asarray(
-            [coefficient.value for coefficient in mobius_rep],
-            dtype=float,
-        )
-        return masks, coefficients
-
-    masks = tuple(coalition_masks)
-    coefficients = np.empty(len(masks), dtype=float)
-
-    for index, mask in enumerate(masks):
-        coalition = subset_decoding(mask, capacity.n_features)
-        coefficient = mobius_rep.get_value(coalition)
-
-        if coefficient is None:
-            raise ValueError(
-                f"Missing Möbius coefficient for coalition {set(coalition)}."
-            )
-
-        coefficients[index] = coefficient
-
-    return masks, coefficients
+    terms = tuple(
+        coefficient
+        for coefficient in mobius_rep._coefficient_map
+        if coefficient.coalition
+    )
+    coalitions = tuple(term.coalition for term in terms)
+    coefficients = np.asarray([term.value for term in terms], dtype=float)
+    return coalitions, coefficients
 
 
-def indices_from_mask(mask: int, n_features: int) -> tuple[int, ...]:
-    """
-    Return the feature indices contained in a bitmask.
-    """
-    if mask <= 0:
+# coalition indices
+def coalition_indices(coalition: Set[int], n_features: int) -> tuple[int, ...]:
+    """Return validated feature indices for a non-empty coalition."""
+    frozen_coalition = frozenset(coalition)
+    if not frozen_coalition:
         raise ValueError(
             "The empty coalition cannot be used in the Möbius design matrix."
         )
-
-    if mask >= 1 << n_features:
+    if any(
+        not isinstance(index, int) or not 0 <= index < n_features
+        for index in frozen_coalition
+    ):
         raise ValueError(
-            f"Mask {mask} is invalid for {n_features} features."
+            f"Coalition {set(frozen_coalition)} is invalid for "
+            f"{n_features} features."
         )
-
-    return tuple(
-        index
-        for index in range(n_features)
-        if mask & (1 << index)
-    )
+    return tuple(sorted(frozen_coalition))

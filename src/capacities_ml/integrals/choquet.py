@@ -2,8 +2,9 @@
 import numpy as np
 
 # modules
-from capacities_ml.capacities.base import Capacity
-from capacities_ml.integrals.utils import as_vector
+from capacities_ml.capacities.capacities import Capacity
+from capacities_ml.mobius import MobiusRepresentation
+from capacities_ml.integrals.utils import as_vector, coalition_indices
 
 # ordered choquet integral
 def ordered_choquet(capacity: Capacity, x: np.ndarray) -> float:
@@ -19,32 +20,33 @@ def ordered_choquet(capacity: Capacity, x: np.ndarray) -> float:
 
     for position, value in enumerate(sorted_x):
         coalition = frozenset(int(index) for index in permutation[position:])
-        capacity_value = capacity.subset_values.get_value(coalition)
-        if capacity_value is None:
-            raise ValueError(
-                f"Missing coalition in capacity map: {set(coalition)}."
-            )
+        capacity_value = capacity.value(coalition)
         choquet_value += (value - previous) * capacity_value
         previous = value
 
     return float(choquet_value)
 
 # integral with mobius coefficients
-def mobius_choquet(capacity: Capacity, x: np.ndarray) -> float:
+def mobius_choquet(mobius_rep: MobiusRepresentation, x: np.ndarray) -> float:
     """
     Compute the discrete Choquet integral from a Möbius representation.
     """
     vector = as_vector(x)
-    mobius_rep = capacity.mobius_rep()
+    if vector.size != mobius_rep.n_vars:
+        raise ValueError(
+            f"The Möbius representation expects {mobius_rep.n_vars} variables, "
+            f"but x has {vector.size}."
+        )
+
     choquet_value = 0.0
 
-    for coefficient in mobius_rep:
+    for coefficient in mobius_rep._coefficient_map:
         coalition = coefficient.coalition
 
         if not coalition:
             continue
-
-        minimum_value = float(np.min(vector[list(coalition)]))
+        feature_indices = coalition_indices(coalition, vector.size)
+        minimum_value = float(np.min(vector[list(feature_indices)]))
         choquet_value += coefficient.value * minimum_value
 
     return float(choquet_value)
