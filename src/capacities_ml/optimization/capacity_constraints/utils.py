@@ -161,9 +161,15 @@ def mobius_capacity_constraints(
                 )
             )
 
+    # A normalized capacity has coefficients bounded by the number of
+    # alternating terms in the corresponding Mobius transform.
+    coefficient_bound = np.asarray(
+        [2.0 ** (mask.bit_count() - 1) for mask in masks],
+        dtype=float,
+    )
     return CapacityParameterization(
         constraints=ConstraintBundle(
-            bounds=VariableBounds.unbounded(n_parameters),
+            bounds=VariableBounds(-coefficient_bound, coefficient_bound),
             linear_constraints=tuple(systems),
         ),
         parameter_masks=masks,

@@ -104,7 +104,10 @@ class PymooGeneticOptimizer(OptimizerBackend[OptimizationProblem]):
         runtime = perf_counter() - start
 
         parameters = np.asarray(raw_result.X, dtype=float).reshape(-1)
-        objective_value = float(np.asarray(raw_result.F).reshape(-1)[0])
+        if raw_result.F is None:
+            objective_value = float(problem.objective(parameters))
+        else:
+            objective_value = float(np.asarray(raw_result.F).reshape(-1)[0])
         violation = problem.maximum_constraint_violation(parameters)
 
         return OptimizationResult(
