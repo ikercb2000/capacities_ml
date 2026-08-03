@@ -44,20 +44,21 @@ class Optimizer:
         return self._compile_numerical(problem)
 
     def _compile_numerical(self, problem: Any) -> Any:
-        constraints = problem.parameterization.constraints
+        constraints = problem.constraints
         return OptimizationProblem(
             objective=problem.objective,
             initial_parameters=problem.initial_parameters,
             bounds=constraints.bounds,
             linear_constraints=constraints.linear_constraints,
             nonlinear_constraints=constraints.nonlinear_constraints,
+            layout=problem.parameter_layout,
             name=problem.name,
             metadata=problem.metadata,
         )
 
     def _compile_cvxpy(self, problem: Any) -> Any:
 
-        constraints = problem.parameterization.constraints
+        constraints = problem.constraints
         if constraints.nonlinear_constraints:
             raise NotImplementedError(
                 "Nonlinear constraints do not have a generic CVXPY translation yet."
@@ -68,6 +69,7 @@ class Optimizer:
             bounds=constraints.bounds,
             linear_constraints=constraints.linear_constraints,
             initial_parameters=problem.initial_parameters,
+            layout=problem.parameter_layout,
             name=problem.name,
             metadata=problem.metadata,
         )

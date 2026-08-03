@@ -9,6 +9,8 @@ from capacities_ml.optimization import (
     KAdditivity,
     Optimizer,
     OptimizationSense,
+    ParameterBlock,
+    ParameterLayout,
     Problem,
     Solver,
 )
@@ -113,3 +115,21 @@ def test_optimizer_translates_supported_objective_for_cvxpy():
 
     assert compiled.sense is OptimizationSense.MINIMIZE
     assert compiled.n_parameters == 2
+
+
+def test_problem_embeds_additional_parameter_blocks():
+    layout = ParameterLayout(
+        ParameterBlock("capacity", size=2),
+        ParameterBlock("intercept", size=1, lower=-5.0, upper=5.0),
+    )
+    problem = Problem.from_capacity(
+        universe=VariableUniverse(("x0",)),
+        objective=lambda parameters: float(np.sum(parameters**2)),
+        parameter_layout=layout,
+        initial_parameters=np.array([0.0, 1.0, 0.25]),
+    )
+
+    assert problem.n_parameters == 3
+    assert problem.constraints.bounds.lower.tolist() == [0.0, 1.0, -5.0]
+    assert problem.constraints.bounds.upper.tolist() == [0.0, 1.0, 5.0]
+    assert problem.decode(np.array([0.0, 1.0, 0.25])).value({0}) == 1.0

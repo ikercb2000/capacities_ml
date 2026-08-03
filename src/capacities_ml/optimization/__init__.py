@@ -32,6 +32,7 @@ from capacities_ml.optimization.objectives import (
     zero_one_loss_objective,
 )
 from capacities_ml.optimization.penalties import L1Penalty, L2Penalty
+from capacities_ml.optimization.parametrization import ParameterBlock, ParameterLayout
 from capacities_ml.optimization.sparsity import CapacitySparsity, FullCapacity, KAdditivity
 
 __all__ = [
@@ -65,5 +66,7 @@ __all__ = [
     "zero_one_loss_objective",
     "L1Penalty",
     "L2Penalty",
+    "ParameterBlock",
+    "ParameterLayout",
     "FullCapacity",
 ]

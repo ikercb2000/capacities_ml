@@ -11,12 +11,14 @@ from capacities_ml.capacities.capacities import Capacity, VariableUniverse
 from capacities_ml.capacities.utils import subset_decoding
 from capacities_ml.mobius import MobiusRepresentation
 from capacities_ml.optimization.constraints import (
+    ConstraintBundle,
     LinearConstraintSystem,
     NonlinearConstraintSpec,
     VariableBounds,
 )
 from capacities_ml.optimization.enums import CapacityRepresentation, OptimizationSense
 from capacities_ml.optimization.objectives import ObjectiveSpec
+from capacities_ml.optimization.parametrization import ParameterLayout, ParameterBlock
 from capacities_ml.optimization.result import OptimizationResult
 from capacities_ml.optimization.sparsity import (
     CapacitySparsity,
@@ -45,6 +47,7 @@ class OptimizationProblem:
     nonlinear_constraints: tuple[NonlinearConstraintSpec, ...] = ()
     gradient: GradientFunction | None = None
     hessian: HessianFunction | None = None
+    layout: ParameterLayout | None = None
     name: str = "optimization_problem"
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -65,6 +68,8 @@ class OptimizationProblem:
                 raise ValueError(
                     f"Linear constraint {constraint.name!r} has an incompatible size."
                 )
+        if self.layout is not None and self.layout.n_parameters != n_parameters:
+            raise ValueError("layout has an incompatible size.")
 
     @property
     def n_parameters(self) -> int:
@@ -102,10 +107,13 @@ class Problem:
     universe: VariableUniverse
     objective: ObjectiveFunction | ObjectiveSpec
     sparsity: CapacitySparsity | None = None
+    parameter_layout: ParameterLayout | None = None
     initial_parameters: ArrayLike | None = None
     name: str = "capacity_problem"
     metadata: dict[str, Any] = field(default_factory=dict)
     _compilation: SparsityCompilation = field(init=False, repr=False)
+    _constraints: ConstraintBundle = field(init=False, repr=False)
+    _capacity_slice: slice = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
         if not isinstance(self.universe, VariableUniverse):
@@ -117,14 +125,88 @@ class Problem:
         if self.sparsity is None:
             self.sparsity = FullCapacity()
         self._compilation = self.sparsity.compile(self.universe.n_vars)
-        initial = (
-            self._compilation.initial_parameters
-            if self.initial_parameters is None
-            else np.asarray(self.initial_parameters, dtype=float)
+        capacity_parameterization = self._compilation.bundle
+        n_capacity_parameters = capacity_parameterization.n_parameters
+
+        if self.parameter_layout is None:
+            self.parameter_layout = ParameterLayout(
+                ParameterBlock("capacity", n_capacity_parameters)
+            )
+        else:
+            try:
+                capacity_slice = self.parameter_layout.slice("capacity")
+            except KeyError as error:
+                raise ValueError(
+                    "parameter_layout must contain a 'capacity' block."
+                ) from error
+            if capacity_slice.stop - capacity_slice.start != n_capacity_parameters:
+                raise ValueError(
+                    "The 'capacity' block has an incompatible size."
+                )
+
+        self._capacity_slice = self.parameter_layout.slice("capacity")
+        self._constraints = self._embed_capacity_constraints(
+            capacity_parameterization.constraints
         )
-        if initial.shape != (self._compilation.bundle.n_parameters,):
+
+        if self.initial_parameters is None:
+            if self.parameter_layout.n_parameters != n_capacity_parameters:
+                raise ValueError(
+                    "initial_parameters are required when parameter_layout "
+                    "contains additional blocks."
+                )
+            initial = self._compilation.initial_parameters
+        else:
+            initial = np.asarray(self.initial_parameters, dtype=float)
+        if initial.shape != (self.parameter_layout.n_parameters,):
             raise ValueError("initial_parameters have an incompatible size.")
+        if not np.all(np.isfinite(initial)):
+            raise ValueError("initial_parameters must be finite.")
         self.initial_parameters = initial.copy()
+
+    def _embed_capacity_constraints(
+        self,
+        capacity_constraints: ConstraintBundle,
+    ) -> ConstraintBundle:
+        """Embed capacity constraints into the complete parameter vector."""
+        total_parameters = self.parameter_layout.n_parameters
+        start = self._capacity_slice.start
+        bounds = self.parameter_layout.bounds().intersect(
+            capacity_constraints.bounds.embed(
+                start=start,
+                total_parameters=total_parameters,
+            )
+        )
+        linear_constraints = capacity_constraints.embedded(
+            start=start,
+            total_parameters=total_parameters,
+        )
+        nonlinear_constraints: list[NonlinearConstraintSpec] = []
+        for constraint in capacity_constraints.nonlinear_constraints:
+            nonlinear_constraints.append(
+                NonlinearConstraintSpec(
+                    function=lambda parameters, constraint=constraint: constraint.values(
+                        np.asarray(parameters)[self._capacity_slice]
+                    ),
+                    lower=constraint.lower,
+                    upper=constraint.upper,
+                    jacobian=(
+                        None
+                        if constraint.jacobian is None
+                        else lambda parameters, constraint=constraint: np.asarray(
+                            constraint.jacobian(
+                                np.asarray(parameters)[self._capacity_slice]
+                            )
+                        )
+                    ),
+                    name=constraint.name,
+                )
+            )
+        return ConstraintBundle(
+            bounds=bounds,
+            linear_constraints=linear_constraints,
+            nonlinear_constraints=tuple(nonlinear_constraints),
+        )
 
     @classmethod
     def from_capacity(
@@ -133,6 +215,7 @@ class Problem:
         universe: VariableUniverse,
         objective: ObjectiveFunction | ObjectiveSpec,
         sparsity: CapacitySparsity | None = None,
+        parameter_layout: ParameterLayout | None = None,
         initial_parameters: ArrayLike | None = None,
         name: str = "capacity_problem",
         metadata: dict[str, Any] | None = None,
@@ -142,6 +225,7 @@ class Problem:
             universe=universe,
             objective=objective,
             sparsity=sparsity,
+            parameter_layout=parameter_layout,
             initial_parameters=initial_parameters,
             name=name,
             metadata={} if metadata is None else metadata,
@@ -149,11 +233,16 @@ class Problem:
 
     @property
     def n_parameters(self) -> int:
-        return self._compilation.bundle.n_parameters
+        return self.parameter_layout.n_parameters
 
     @property
     def parameterization(self):
         return self._compilation.bundle
+
+    @property
+    def constraints(self) -> ConstraintBundle:
+        """Return constraints embedded in the complete parameter vector."""
+        return self._constraints
 
     @property
     def representation(self) -> CapacityRepresentation:
@@ -174,18 +263,19 @@ class Problem:
             raise ValueError(
                 f"Expected {self.n_parameters} parameters; got {vector.shape}."
             )
+        capacity_vector = vector[self._capacity_slice]
 
         if self.representation is CapacityRepresentation.VALUES:
             values = {
                 subset_decoding(mask, self.universe.n_vars): value
-                for mask, value in zip(self.parameter_masks, vector)
+                for mask, value in zip(self.parameter_masks, capacity_vector)
                 if mask
             }
             return Capacity(universe=self.universe, values=values)
 
         coefficients = {
             subset_decoding(mask, self.universe.n_vars): value
-            for mask, value in zip(self.parameter_masks, vector)
+            for mask, value in zip(self.parameter_masks, capacity_vector)
         }
         return MobiusRepresentation(
             universe=self.universe,
@@ -209,6 +299,7 @@ class CvxpyOptimizationProblem:
     linear_constraints: tuple[LinearConstraintSystem, ...] = ()
     additional_constraints_builder: CvxpyConstraintBuilder | None = None
     initial_parameters: FloatArray | None = None
+    layout: ParameterLayout | None = None
     name: str = "cvxpy_optimization_problem"
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -229,3 +320,5 @@ class CvxpyOptimizationProblem:
             if initial.shape != (self.n_parameters,):
                 raise ValueError("initial_parameters have an incompatible size.")
             self.initial_parameters = initial.copy()
+        if self.layout is not None and self.layout.n_parameters != self.n_parameters:
+            raise ValueError("layout has an incompatible size.")
