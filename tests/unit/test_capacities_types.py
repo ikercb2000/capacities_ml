@@ -1,9 +1,10 @@
 import pytest
 
 # modules
-from capacities_ml.capacities import Capacity, VariableUniverse
+from capacities_ml.capacities import Capacity, KAdditiveCapacity, VariableUniverse
 from capacities_ml.capacities.types import CapacityMap, CoalitionValue
 from capacities_ml.mobius.types import MobiusMap
+from capacities_ml.mobius import mobius_transform
 
 
 def test_coalition_value_normalizes_to_frozenset():
@@ -130,3 +131,23 @@ def test_capacity_supports_user_friendly_access():
         ("quality",): 0.5,
         ("price", "quality"): 1.0,
     }
+
+
+def test_k_additive_capacity_derives_coalitions_above_k():
+    capacity = KAdditiveCapacity(
+        universe=VariableUniverse(("x0", "x1", "x2")),
+        values={
+            "x0": 0.2,
+            "x1": 0.3,
+            "x2": 0.1,
+            ("x0", "x1"): 0.6,
+            ("x0", "x2"): 0.45,
+            ("x1", "x2"): 0.55,
+        },
+        k=2,
+    )
+
+    mobius_rep = mobius_transform(capacity)
+
+    assert capacity.value(("x0", "x1", "x2")) == pytest.approx(1.0)
+    assert mobius_rep.value(("x0", "x1", "x2")) == pytest.approx(0.0)
