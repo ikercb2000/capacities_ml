@@ -10,7 +10,9 @@ from capacities_ml.optimization.capacity_constraints import (
     CapacityParameterization,
     capacity_value_constraints,
     mobius_capacity_constraints,
+    pairwise_interaction_constraints,
 )
+from capacities_ml.optimization.constraints import ConstraintBundle
 from capacities_ml.optimization.enums import CapacityShape
 
 # sparsity aliases
@@ -70,6 +72,57 @@ class KAdditivity(CapacitySparsity):
         )
 
         # Equal singleton terms provide a normalized, monotone starting point.
+        initial = np.zeros(bundle.n_parameters, dtype=float)
+        singleton_positions = [
+            position
+            for position, mask in enumerate(bundle.parameter_masks)
+            if mask.bit_count() == 1
+        ]
+        initial[singleton_positions] = 1.0 / n_vars
+        return SparsityCompilation(bundle=bundle, initial_parameters=initial)
+
+
+# pairwise interaction sparsity
+@dataclass(frozen=True, slots=True)
+class PairwiseInteractionSparsity(CapacitySparsity):
+    """Keep selected pairwise interaction indices fixed to target values."""
+
+    order: int
+    pairs: tuple[tuple[int, int], ...] | None = None
+    target: float = 0.0
+    shape: CapacityShape = CapacityShape.GENERAL
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.shape, CapacityShape):
+            raise TypeError("shape must be a CapacityShape enum member.")
+        if self.order < 2:
+            raise ValueError("order must be at least 2 for pairwise interactions.")
+
+    def compile(self, n_vars: int) -> SparsityCompilation:
+        bundle = mobius_capacity_constraints(
+            n_vars,
+            self.order,
+            shape=self.shape,
+        )
+        interaction_system = pairwise_interaction_constraints(
+            n_vars,
+            self.order,
+            pairs=self.pairs,
+            lower=self.target,
+            upper=self.target,
+        )
+        bundle = type(bundle)(
+            constraints=ConstraintBundle(
+                bounds=bundle.constraints.bounds,
+                linear_constraints=bundle.constraints.linear_constraints
+                + (interaction_system,),
+                nonlinear_constraints=bundle.constraints.nonlinear_constraints,
+            ),
+            parameter_masks=bundle.parameter_masks,
+            representation=bundle.representation,
+            n_features=bundle.n_features,
+            max_order=bundle.max_order,
+        )
         initial = np.zeros(bundle.n_parameters, dtype=float)
         singleton_positions = [
             position

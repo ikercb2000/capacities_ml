@@ -28,7 +28,12 @@ from capacities_ml.optimization.objectives import (
 )
 from capacities_ml.optimization.penalties import L1Penalty, L2Penalty
 from capacities_ml.optimization.parametrization import ParameterBlock, ParameterLayout
-from capacities_ml.optimization.sparsity import CapacitySparsity, FullCapacity, KAdditivity
+from capacities_ml.optimization.sparsity import (
+    CapacitySparsity,
+    FullCapacity,
+    KAdditivity,
+    PairwiseInteractionSparsity,
+)
 
 __all__ = [
     "OptimizationResult",
@@ -60,4 +65,5 @@ __all__ = [
     "ParameterBlock",
     "ParameterLayout",
     "FullCapacity",
+    "PairwiseInteractionSparsity",
 ]
