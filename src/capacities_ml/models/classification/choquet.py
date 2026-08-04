@@ -8,12 +8,11 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.validation import check_array, check_is_fitted, column_or_1d
 
 # modules
-from capacities_ml.capacities import Capacity, VariableUniverse
+from capacities_ml.capacities import VariableUniverse
 from capacities_ml.models._choquet import capacity_design, validate_features
 from capacities_ml.optimization import (
     FullCapacity,
     Optimizer,
-    OptimizationResult,
     ParameterBlock,
     ParameterLayout,
     Problem,

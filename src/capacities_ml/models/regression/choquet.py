@@ -7,12 +7,11 @@ from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.validation import check_X_y, check_is_fitted
 
 # modules
-from capacities_ml.capacities import Capacity, VariableUniverse
+from capacities_ml.capacities import VariableUniverse
 from capacities_ml.models._choquet import capacity_design, validate_features
 from capacities_ml.optimization import (
     FullCapacity,
     Optimizer,
-    OptimizationResult,
     ParameterBlock,
     ParameterLayout,
     Problem,

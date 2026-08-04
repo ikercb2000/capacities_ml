@@ -1,9 +1,5 @@
-from capacities_ml.optimization.optimizer import Optimizer, OptimizerBackend
-from capacities_ml.optimization.problem import (
-    CvxpyOptimizationProblem,
-    OptimizationProblem,
-    Problem,
-)
+from capacities_ml.optimization.optimizer import Optimizer
+from capacities_ml.optimization.problem import Problem
 from capacities_ml.optimization.result import OptimizationResult
 from capacities_ml.optimization.enums import (
     CapacityRepresentation,
@@ -11,7 +7,6 @@ from capacities_ml.optimization.enums import (
     OptimizationSense,
     Solver,
 )
-from capacities_ml.optimization.capacity_constraints import CapacityParameterization
 from capacities_ml.optimization.constraints import (
     ConstraintBundle,
     LinearConstraintSystem,
@@ -36,11 +31,8 @@ from capacities_ml.optimization.parametrization import ParameterBlock, Parameter
 from capacities_ml.optimization.sparsity import CapacitySparsity, FullCapacity, KAdditivity
 
 __all__ = [
-    "CvxpyOptimizationProblem",
-    "OptimizationProblem",
     "OptimizationResult",
     "Optimizer",
-    "OptimizerBackend",
     "Problem",
     "CapacitySparsity",
     "KAdditivity",
@@ -49,7 +41,6 @@ __all__ = [
     "OptimizationSense",
     "Solver",
     "ConstraintBundle",
-    "CapacityParameterization",
     "LinearConstraintSystem",
     "NonlinearConstraintSpec",
     "VariableBounds",
