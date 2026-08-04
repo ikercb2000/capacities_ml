@@ -4,7 +4,8 @@ from typing import Any
 import numpy as np
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator, ClassifierMixin
-from sklearn.utils.validation import check_X_y, check_is_fitted
+from sklearn.preprocessing import LabelEncoder
+from sklearn.utils.validation import check_array, check_is_fitted, column_or_1d
 
 # modules
 from capacities_ml.capacities import Capacity, VariableUniverse
@@ -40,17 +41,15 @@ class ChoquetClassifier(ClassifierMixin, BaseEstimator):
 
     def fit(self, X: ArrayLike, y: ArrayLike) -> "ChoquetClassifier":
         """Fit the capacity and the classification threshold."""
-        matrix, target = check_X_y(
-            X,
-            y,
-            dtype=float,
-            ensure_2d=True,
-            ensure_min_samples=1,
-        )
+        matrix = check_array(X, dtype=float, ensure_2d=True, ensure_min_samples=1)
         matrix = validate_features(matrix, self.universe, fitting=True)
-        target = np.asarray(target, dtype=int).reshape(-1)
-        if np.any((target != 0) & (target != 1)):
-            raise ValueError("y must contain only binary labels 0 and 1.")
+        raw_target = column_or_1d(y, warn=True)
+        if raw_target.shape != (matrix.shape[0],):
+            raise ValueError("y must contain one label per observation.")
+        label_encoder = LabelEncoder()
+        target = label_encoder.fit_transform(raw_target)
+        if label_encoder.classes_.size != 2:
+            raise ValueError("y must contain exactly two distinct labels.")
         if not isinstance(self.solver, Solver):
             raise TypeError("solver must be a Solver enum member.")
 
@@ -94,7 +93,7 @@ class ChoquetClassifier(ClassifierMixin, BaseEstimator):
         self.result_ = result
         self.capacity_ = problem.decode_result(result)
         self.threshold_ = float(result.parameters[threshold_slice][0])
-        self.classes_ = np.array([0, 1])
+        self.classes_ = label_encoder.classes_
         self.n_classes_ = self.classes_.size
         self.n_features_in_ = matrix.shape[1]
         self.feature_names_in_ = np.asarray(self.universe.var_names, dtype=object)
@@ -116,14 +115,16 @@ class ChoquetClassifier(ClassifierMixin, BaseEstimator):
     def predict(self, X: ArrayLike) -> np.ndarray:
         """Predict binary labels using the fitted threshold."""
         scores = self.decision_function(X)
-        return (scores >= self.threshold_).astype(int)
+        encoded_predictions = (scores >= self.threshold_).astype(int)
+        return self.classes_[encoded_predictions]
 
     def predict_proba(self, X: ArrayLike) -> np.ndarray:
         """Return deterministic class probabilities induced by the threshold."""
         predictions = self.predict(X)
+        encoded_predictions = np.searchsorted(self.classes_, predictions)
         probabilities = np.zeros((predictions.size, 2), dtype=float)
-        probabilities[:, 1] = predictions
-        probabilities[:, 0] = 1.0 - predictions
+        probabilities[:, 1] = encoded_predictions
+        probabilities[:, 0] = 1.0 - encoded_predictions
         return probabilities
 
     def get_feature_names_out(self, input_features: ArrayLike | None = None) -> np.ndarray:
