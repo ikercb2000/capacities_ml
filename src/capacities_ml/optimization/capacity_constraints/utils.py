@@ -179,6 +179,40 @@ def mobius_capacity_constraints(
     )
 
 
+# pairwise interaction constraints
+def pairwise_interaction_constraints(
+    n_features: int,
+    max_order: int,
+    *,
+    pairs: tuple[tuple[int, int], ...] | None = None,
+    lower: float | np.ndarray = 0.0,
+    upper: float | np.ndarray = 0.0,
+) -> LinearConstraintSystem:
+    """Build linear constraints on Shapley pairwise interactions."""
+    masks = coalition_masks(n_features, max_order)
+    if pairs is None:
+        pairs = tuple(combinations(range(n_features), 2))
+    rows: list[np.ndarray] = []
+    for first, second in pairs:
+        if not 0 <= first < n_features or not 0 <= second < n_features:
+            raise ValueError("Interaction feature index is outside the universe.")
+        if first == second:
+            raise ValueError("Pairwise interactions require distinct features.")
+        row = np.zeros(len(masks), dtype=float)
+        for position, mask in enumerate(masks):
+            if mask & (1 << first) and mask & (1 << second):
+                row[position] = 1.0 / (mask.bit_count() - 1)
+        rows.append(row)
+    lower_array = np.broadcast_to(np.asarray(lower, dtype=float), (len(rows),))
+    upper_array = np.broadcast_to(np.asarray(upper, dtype=float), (len(rows),))
+    return LinearConstraintSystem(
+        matrix=np.vstack(rows),
+        lower=lower_array,
+        upper=upper_array,
+        name="pairwise_interaction_constraints",
+    )
+
+
 # interaction parameter mask
 def interaction_parameter_mask(parameter_masks: tuple[int, ...]) -> np.ndarray:
     return np.asarray([mask.bit_count() >= 2 for mask in parameter_masks], dtype=bool)

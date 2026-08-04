@@ -8,6 +8,7 @@ from capacities_ml.optimization.capacity_constraints.utils import (
     immediate_supersets,
     interaction_parameter_mask,
     mobius_capacity_constraints,
+    pairwise_interaction_constraints,
     stable_ar_bounds,
 )
 
@@ -19,5 +20,6 @@ __all__ = [
     "immediate_supersets",
     "interaction_parameter_mask",
     "mobius_capacity_constraints",
+    "pairwise_interaction_constraints",
     "stable_ar_bounds",
 ]
