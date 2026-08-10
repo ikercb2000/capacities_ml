@@ -74,7 +74,7 @@ def _logistic_loss(objective: LogisticNegativeLogLikelihood, variable: Any) -> A
     logits = _symbolic_prediction(objective, variable)
     losses = cp.multiply(
         np.asarray(objective.sample_weight),
-        cp.logistic(logits) - np.asarray(objective.target) * logits,
+        cp.logistic(logits) - cp.multiply(np.asarray(objective.target), logits),
     )
     loss = cp.sum(losses)
     if objective.mean:
