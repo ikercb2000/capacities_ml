@@ -60,6 +60,7 @@ def build_data(
 
 # classifier example
 def main() -> None:
+    np.set_printoptions(precision=4, suppress=True)
     data, universe, true_mobius = build_data()
     feature_columns = list(universe.var_names)
     X = data.select(feature_columns).to_numpy()
@@ -80,7 +81,18 @@ def main() -> None:
 
     scores = model.decision_function(X)
     predictions = model.predict(X)
+    probabilities = model.predict_proba(X)
     accuracy = float(np.mean(predictions == y))
+    X_new = np.array(
+        [
+            [0.15, 0.20, 0.10, 0.25],
+            [0.80, 0.75, 0.90, 0.70],
+            [0.45, 0.60, 0.55, 0.50],
+        ]
+    )
+    new_scores = model.decision_function(X_new)
+    new_predictions = model.predict(X_new)
+
     print("Choquet linear classifier with synthetic data")
     print(f"Observations: {data.height}")
     print(f"Features: {universe.var_names}")
@@ -92,14 +104,25 @@ def main() -> None:
     print(f"Solver success: {model.result_.success}")
     print(f"Maximum constraint violation: {model.result_.diagnostics['maximum_constraint_violation']:.6g}")
     print()
-    print("First three observations")
-    print(data.head(3).write_csv())
+    print("First five rows of X")
+    print(X[:5])
+    print("First five labels of y")
+    print(y[:5])
+    print("First five scores, predictions and positive-class probabilities")
+    print(np.column_stack((scores[:5], predictions[:5], probabilities[:5, 1])))
     print()
     print("True Mobius coefficients")
     print(true_mobius.to_named_dict())
     print()
     print("Fitted Mobius coefficients")
     print(model.capacity_.to_named_dict())
+    print()
+    print("New observations X_new")
+    print(X_new)
+    print("Scores for X_new")
+    print(new_scores)
+    print("Predicted classes for X_new")
+    print(new_predictions)
 
 
 if __name__ == "__main__":
