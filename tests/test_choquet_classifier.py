@@ -2,7 +2,7 @@ import numpy as np
 
 from capacities_ml.capacities import VariableUniverse
 from capacities_ml.models import ChoquetClassifier
-from capacities_ml.optimization import Solver
+from capacities_ml.optimization import L1Penalty, Solver
 
 
 def test_choquet_classifier_optimizes_capacity_and_threshold():
@@ -16,9 +16,11 @@ def test_choquet_classifier_optimizes_capacity_and_threshold():
     )
     y = np.array([0, 0, 1, 1])
 
+    penalty = L1Penalty(weight=0.001, selection=[0])
     model = ChoquetClassifier(
         universe=VariableUniverse(("x0", "x1")),
         solver=Solver.PYMOO,
+        penalty=penalty,
         solver_options={
             "population_size": 30,
             "n_generations": 20,
@@ -29,6 +31,7 @@ def test_choquet_classifier_optimizes_capacity_and_threshold():
     assert model.result_.success
     assert 0.0 <= model.threshold_ <= 1.0
     assert model.problem_.parameter_layout.slice("threshold") == slice(4, 5)
+    assert model.problem_.objective.penalty is penalty
 
 
 def test_choquet_classifier_accepts_arbitrary_binary_labels():

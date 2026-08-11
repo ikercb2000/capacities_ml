@@ -38,11 +38,13 @@ class ChoquetClassifier(ClassifierMixin, BaseEstimator):
         sparsity: CapacitySparsity | None = None,
         solver: Solver = Solver.PYMOO,
         solver_options: dict[str, Any] | None = None,
+        penalty: Any = None,
     ) -> None:
         self.universe = universe
         self.sparsity = sparsity
         self.solver = solver
         self.solver_options = solver_options
+        self.penalty = penalty
 
     def fit(self, X: ArrayLike, y: ArrayLike) -> "ChoquetClassifier":
         """Fit the capacity and the classification threshold."""
@@ -86,7 +88,11 @@ class ChoquetClassifier(ClassifierMixin, BaseEstimator):
         )
 
         # direct 0-1 loss optimization
-        objective = ZeroOneLossObjective(target=target, predictor=classifier)
+        objective = ZeroOneLossObjective(
+            target=target,
+            predictor=classifier,
+            penalty=self.penalty,
+        )
         problem = Problem.from_capacity(
             universe=self.universe,
             objective=objective,

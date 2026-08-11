@@ -123,6 +123,7 @@ class ZeroOneLossObjective(ObjectiveSpec):
     target: ArrayLike
     predictor: Predictor
     mean: bool = False
+    penalty: Any = None
 
     def __post_init__(self) -> None:
         self.target = np.asarray(self.target, dtype=int).reshape(-1)
@@ -132,4 +133,5 @@ class ZeroOneLossObjective(ObjectiveSpec):
         if prediction.shape != self.target.shape:
             raise ValueError("classifier output and target are incompatible.")
         errors = prediction != self.target
-        return float(np.mean(errors) if self.mean else np.sum(errors))
+        loss = np.mean(errors) if self.mean else np.sum(errors)
+        return float(loss + (0.0 if self.penalty is None else self.penalty(parameters)))

@@ -5,16 +5,18 @@ from sklearn.base import clone
 from capacities_ml.capacities import VariableUniverse
 from capacities_ml.integrals.batch_integrals import batch_choquet_integral_mobius
 from capacities_ml.models import ChoquisticRegression
-from capacities_ml.optimization import CapacityRepresentation
+from capacities_ml.optimization import CapacityRepresentation, L2Penalty
 
 
 def test_choquistic_regression_is_probabilistic_and_cloneable(
     binary_classification_sample,
 ):
     X, y = binary_classification_sample
+    penalty = L2Penalty(weight=0.001, selection=[0])
     model = ChoquisticRegression(
         universe=VariableUniverse(("x0", "x1")),
         class_weight="balanced",
+        penalty=penalty,
     ).fit(X, y)
 
     probabilities = model.predict_proba(X)
@@ -30,6 +32,7 @@ def test_choquistic_regression_is_probabilistic_and_cloneable(
     assert gamma_slice.stop - gamma_slice.start == 1
     assert beta_slice.stop - beta_slice.start == 1
     assert model.problem_.representation is CapacityRepresentation.MOBIUS
+    assert model.problem_.objective.penalty is penalty
     utilities = batch_choquet_integral_mobius(X, model.capacity_)
     np.testing.assert_allclose(model.utility_function(X), utilities)
     np.testing.assert_allclose(

@@ -48,12 +48,14 @@ class ChoquisticRegression(ClassifierMixin, BaseEstimator):
         solver: Solver = Solver.SCIPY,
         solver_options: dict[str, Any] | None = None,
         class_weight: dict[Any, float] | str | None = None,
+        penalty: Any = None,
     ) -> None:
         self.universe = universe
         self.sparsity = sparsity
         self.solver = solver
         self.solver_options = solver_options
         self.class_weight = class_weight
+        self.penalty = penalty
 
     def fit(
         self,
@@ -145,6 +147,7 @@ class ChoquisticRegression(ClassifierMixin, BaseEstimator):
             target=target,
             predictor=linear_predictor,
             sample_weight=weights,
+            penalty=self.penalty,
         )
         problem = Problem.from_capacity(
             universe=self.universe,

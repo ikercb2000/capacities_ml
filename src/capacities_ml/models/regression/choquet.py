@@ -31,11 +31,13 @@ class ChoquetRegressor(RegressorMixin, BaseEstimator):
         sparsity: CapacitySparsity | None = None,
         solver: Solver = Solver.SCIPY,
         solver_options: dict[str, Any] | None = None,
+        penalty: Any = None,
     ) -> None:
         self.universe = universe
         self.sparsity = sparsity
         self.solver = solver
         self.solver_options = solver_options
+        self.penalty = penalty
 
     def fit(self, X: ArrayLike, y: ArrayLike) -> "ChoquetRegressor":
         """Fit the capacity and the regression intercept."""
@@ -78,6 +80,7 @@ class ChoquetRegressor(RegressorMixin, BaseEstimator):
         objective = SquaredErrorObjective(
             target=target,
             predictor=predictor,
+            penalty=self.penalty,
             symbolic_predictor=symbolic_predictor,
         )
         problem = Problem.from_capacity(
