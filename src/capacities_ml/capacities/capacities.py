@@ -1,11 +1,15 @@
 # imports
 from collections.abc import Iterable, Mapping
 from dataclasses import InitVar, dataclass, field
+import numpy as np
+from numpy.typing import ArrayLike
 
 # modules
+from capacities_ml.capacities.base import BaseCapacity
 from capacities_ml.capacities.types import CapacityMap, CoalitionValue
 from capacities_ml.capacities.utils import (
     CoalitionInput,
+    _event_mask,
     named_coalition,
     normalize_coalition,
 )
@@ -17,19 +21,19 @@ class VariableUniverse:
     """Names and index mapping of the variables used by a capacity."""
 
     var_names: Iterable[str]
-    n_vars: int = field(init=False)
+    n_elements: int = field(init=False)
     name_to_index: dict[str, int] = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
         var_names = tuple(self.var_names)
         self.var_names = var_names
-        self.n_vars = len(var_names)
+        self.n_elements = len(var_names)
 
-        if self.n_vars < 1:
+        if self.n_elements < 1:
             raise ValueError("var_names must contain at least one variable.")
         if not all(isinstance(name, str) and name for name in var_names):
             raise ValueError("var_names must contain non-empty strings.")
-        if len(set(var_names)) != self.n_vars:
+        if len(set(var_names)) != self.n_elements:
             raise ValueError("var_names must be unique.")
 
         self.name_to_index = {
@@ -39,7 +43,7 @@ class VariableUniverse:
 
 # capacity class
 @dataclass
-class Capacity:
+class Capacity(BaseCapacity):
     """A normalized monotone set function over a fixed feature set."""
 
     universe: VariableUniverse
@@ -61,8 +65,8 @@ class Capacity:
         return tuple(self.universe.var_names)
 
     @property
-    def n_vars(self) -> int:
-        return self.universe.n_vars
+    def n_elements(self) -> int:
+        return self.universe.n_elements
 
     def value(self, coalition: CoalitionInput) -> float:
         """Return the value of a coalition expressed by names or indices."""
@@ -71,6 +75,12 @@ class Capacity:
         if value is None:
             raise KeyError(f"Unknown coalition: {coalition}.")
         return value
+
+    def event_value(self, event: ArrayLike) -> float:
+        """Return the stored value of a boolean event mask."""
+        mask = _event_mask(event, self.n_elements)
+        coalition = frozenset(int(index) for index in np.flatnonzero(mask))
+        return self.value(coalition)
 
     def to_named_dict(self) -> dict[tuple[str, ...], float]:
         """Return the tabular capacity values keyed by variable names."""
@@ -83,5 +93,5 @@ class Capacity:
         """Check the mathematical invariants of the capacity."""
         check_monotonicity(
             self.values,
-            frozenset(range(self.n_vars)),
+            frozenset(range(self.n_elements)),
         )

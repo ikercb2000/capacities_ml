@@ -18,10 +18,10 @@ class KAdditiveCapacity(Capacity):
             raise TypeError("universe must be a VariableUniverse instance.")
         if not isinstance(self.k, int):
             raise TypeError("k must be an integer.")
-        if not 1 <= self.k <= self.universe.n_vars:
+        if not 1 <= self.k <= self.universe.n_elements:
             raise ValueError(
-                f"k must satisfy 1 <= k <= n_vars, received k={self.k} "
-                f"and n_vars={self.universe.n_vars}."
+                f"k must satisfy 1 <= k <= n_elements, received k={self.k} "
+                f"and n_elements={self.universe.n_elements}."
             )
 
         normalized_values: dict[frozenset[int], float] = {}
@@ -35,7 +35,7 @@ class KAdditiveCapacity(Capacity):
         super().__post_init__(completed_values)
 
     def _complete_k_additive_values(self, values: dict[frozenset[int], float]) -> dict[frozenset[int], float]:
-        variables = tuple(range(self.universe.n_vars))
+        variables = tuple(range(self.universe.n_elements))
         required_coalitions = [
             frozenset(coalition)
             for size in range(1, self.k + 1)
@@ -62,7 +62,7 @@ class KAdditiveCapacity(Capacity):
             mobius_coefficients[coalition] = values[coalition] - lower_order_sum
 
         completed_values = dict(values)
-        for size in range(self.k + 1, self.universe.n_vars + 1):
+        for size in range(self.k + 1, self.universe.n_elements + 1):
             for coalition_items in combinations(variables, size):
                 coalition = frozenset(coalition_items)
                 completed_values.setdefault(
@@ -78,4 +78,4 @@ class KAdditiveCapacity(Capacity):
 
     def validate(self) -> None:
         super().validate()
-        check_k_additivity(self.values, self.k, self.n_vars)
+        check_k_additivity(self.values, self.k, self.n_elements)

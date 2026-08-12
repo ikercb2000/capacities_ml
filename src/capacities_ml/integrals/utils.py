@@ -41,7 +41,7 @@ def capacity_values_by_mask(capacity: Capacity) -> np.ndarray:
     """
     Return the capacity values indexed by subset bitmasks.
     """
-    n_features = capacity.n_vars
+    n_features = capacity.n_elements
     values = np.empty(1 << n_features, dtype=float)
     values[0] = 0.0
 

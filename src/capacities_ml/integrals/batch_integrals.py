@@ -3,7 +3,8 @@ from collections.abc import Sequence, Set
 import numpy as np
 
 # modules
-from capacities_ml.capacities.capacities import Capacity
+from capacities_ml.capacities import BaseCapacity, Capacity
+from capacities_ml.integrals.choquet import ordered_choquet
 from capacities_ml.mobius import MobiusRepresentation
 from capacities_ml.integrals.utils import (
     as_matrix,
@@ -38,19 +39,23 @@ def capacity_design_matrix(X: np.ndarray) -> np.ndarray:
 
 
 # matrix-like choquet integral
-def batch_choquet_integral(X: np.ndarray, capacity: Capacity) -> np.ndarray:
+def batch_choquet_integral(X: np.ndarray, capacity: BaseCapacity) -> np.ndarray:
     """
     Evaluate the discrete Choquet integral row by row.
     """
     matrix = as_matrix(X)
     _, n_features = matrix.shape
-    if n_features != capacity.n_vars:
+    if not isinstance(capacity, BaseCapacity):
+        raise TypeError("capacity must be a BaseCapacity instance.")
+    if n_features != capacity.n_elements:
         raise ValueError(
-            f"The capacity expects {capacity.n_vars} features, but X has {n_features}."
+            f"The capacity expects {capacity.n_elements} elements, but X has {n_features}."
         )
 
-    values_by_mask = capacity_values_by_mask(capacity)
-    return capacity_design_matrix(matrix) @ values_by_mask
+    if isinstance(capacity, Capacity):
+        values_by_mask = capacity_values_by_mask(capacity)
+        return capacity_design_matrix(matrix) @ values_by_mask
+    return np.asarray([ordered_choquet(capacity, row) for row in matrix])
 
 # mobius design matrix
 def mobius_design_matrix(X: np.ndarray,coalitions: Sequence[Set[int]]) -> np.ndarray:
@@ -73,9 +78,9 @@ def batch_choquet_integral_mobius(X: np.ndarray, mobius_rep: MobiusRepresentatio
     Evaluate several Choquet integrals using the Möbius representation.
     """
     matrix = as_matrix(X)
-    if matrix.shape[1] != mobius_rep.n_vars:
+    if matrix.shape[1] != mobius_rep.n_elements:
         raise ValueError(
-            f"The Möbius representation expects {mobius_rep.n_vars} variables, "
+            f"The Möbius representation expects {mobius_rep.n_elements} variables, "
             f"but X has {matrix.shape[1]}."
         )
 

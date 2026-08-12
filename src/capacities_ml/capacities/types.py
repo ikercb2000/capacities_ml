@@ -1,7 +1,13 @@
 # imports
-from collections.abc import Iterable, Iterator, Set as AbstractSet
+from collections.abc import Iterable, Iterator, Mapping, Set
 from dataclasses import InitVar, dataclass, field
+from typing import Protocol
 
+# variable universe protocol
+class VariableUniverseLike(Protocol):
+    var_names: Iterable[str]
+    n_elements: int
+    name_to_index: Mapping[str, int]
 
 # coalition value
 @dataclass
@@ -43,13 +49,13 @@ class CoalitionMap:
     def to_lookup(self) -> dict[frozenset[int], float]:
         return dict(self.lookup_dict)
 
-    def get_value(self, subset: AbstractSet[int]) -> float | None:
+    def get_value(self, subset: Set[int]) -> float | None:
         return self.lookup_dict.get(frozenset(subset))
 
-    def set_value(self, coalition: AbstractSet[int], value: float) -> None:
+    def set_value(self, coalition: Set[int], value: float) -> None:
         self.lookup_dict[frozenset(coalition)] = float(value)
 
-    def remove_value(self, coalition: AbstractSet[int]) -> None:
+    def remove_value(self, coalition: Set[int]) -> None:
         del self.lookup_dict[frozenset(coalition)]
 
     def get_coalition(self, value: float) -> list[frozenset[int]]:
@@ -90,13 +96,13 @@ class CapacityMap(CoalitionMap):
             if coalition
         )
 
-    def set_value(self, coalition: AbstractSet[int], value: float) -> None:
+    def set_value(self, coalition: Set[int], value: float) -> None:
         frozen_coalition = frozenset(coalition)
         if not frozen_coalition:
             raise ValueError("The empty coalition always has value zero.")
         super().set_value(frozen_coalition, value)
 
-    def remove_value(self, coalition: AbstractSet[int]) -> None:
+    def remove_value(self, coalition: Set[int]) -> None:
         frozen_coalition = frozenset(coalition)
         if not frozen_coalition:
             raise ValueError("The empty coalition cannot be removed.")

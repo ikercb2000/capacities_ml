@@ -2,29 +2,33 @@
 import numpy as np
 
 # modules
-from capacities_ml.capacities.capacities import Capacity
+from capacities_ml.capacities import BaseCapacity
 from capacities_ml.mobius import MobiusRepresentation
 from capacities_ml.integrals.utils import as_vector, coalition_indices
 
 # ordered choquet integral
-def ordered_choquet(capacity: Capacity, x: np.ndarray) -> float:
+def ordered_choquet(capacity: BaseCapacity, x: np.ndarray) -> float:
     """
     Compute the discrete Choquet integral from a capacity.
     """
+    if not isinstance(capacity, BaseCapacity):
+        raise TypeError("capacity must be a BaseCapacity instance.")
     vector = as_vector(x)
-    permutation = np.argsort(vector)
-    sorted_x = vector[permutation] # ordered vector
-
-    choquet_value = 0.0
-    previous = 0.0
-
-    for position, value in enumerate(sorted_x):
-        coalition = frozenset(int(index) for index in permutation[position:])
-        capacity_value = capacity.value(coalition)
-        choquet_value += (value - previous) * capacity_value
-        previous = value
-
-    return float(choquet_value)
+    if vector.size != capacity.n_elements:
+        raise ValueError(
+            f"The capacity expects {capacity.n_elements} elements, "
+            f"but x has {vector.size}."
+        )
+    permutation = np.argsort(vector, kind="stable")
+    sorted_values = vector[permutation]
+    increments = np.diff(np.concatenate(([0.0], sorted_values)))
+    capacity_values = np.asarray(
+        capacity.nested_event_values(permutation),
+        dtype=float,
+    )
+    if capacity_values.shape != vector.shape:
+        raise ValueError("nested_event_values returned an incompatible shape.")
+    return float(np.dot(increments, capacity_values))
 
 # integral with mobius coefficients
 def mobius_choquet(mobius_rep: MobiusRepresentation, x: np.ndarray) -> float:
@@ -32,9 +36,9 @@ def mobius_choquet(mobius_rep: MobiusRepresentation, x: np.ndarray) -> float:
     Compute the discrete Choquet integral from a Möbius representation.
     """
     vector = as_vector(x)
-    if vector.size != mobius_rep.n_vars:
+    if vector.size != mobius_rep.n_elements:
         raise ValueError(
-            f"The Möbius representation expects {mobius_rep.n_vars} variables, "
+            f"The Möbius representation expects {mobius_rep.n_elements} variables, "
             f"but x has {vector.size}."
         )
 

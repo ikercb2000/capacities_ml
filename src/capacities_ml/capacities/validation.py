@@ -1,5 +1,5 @@
 # imports
-from collections.abc import Set as AbstractSet
+from collections.abc import Set
 from math import isclose, isfinite
 
 # modules
@@ -7,7 +7,7 @@ from capacities_ml.capacities.types import CapacityMap
 
 
 # monotonicity
-def check_monotonicity(capacities: CapacityMap, features: AbstractSet[int], tolerance: float = 1e-12) -> None:
+def check_monotonicity(capacities: CapacityMap, features: Set[int], tolerance: float = 1e-12) -> None:
     """
     Check that a capacity is normalized and monotone.
     """
