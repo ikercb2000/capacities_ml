@@ -4,7 +4,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 # modules
-from capacities_ml.capacities.types import CapacityMap
+from capacities_ml.capacities.types import CapacityMap, VariableUniverseLike
 
 
 # aliases
