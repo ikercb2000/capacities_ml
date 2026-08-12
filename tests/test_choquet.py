@@ -1,6 +1,7 @@
 import numpy as np
 
 from capacities_ml.capacities import (
+    BaseCapacity,
     Capacity,
     VariableUniverse,
 )
@@ -30,6 +31,15 @@ def test_ordered_choquet_matches_manual_value():
     choquet_value = ordered_choquet(capacity, x)
 
     assert np.isclose(choquet_value, 1.4)
+
+
+def test_tabular_capacity_implements_common_event_interface():
+    capacity = build_capacity()
+
+    assert isinstance(capacity, BaseCapacity)
+    assert capacity.n_elements == 2
+    assert capacity.event_value([True, False]) == 0.2
+    np.testing.assert_allclose(capacity.nested_event_values([1, 0]), [1.0, 0.2])
 
 
 def test_mobius_choquet_matches_ordered_choquet():

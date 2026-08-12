@@ -1,5 +1,5 @@
 # imports
-from collections.abc import Set as AbstractSet
+from collections.abc import Set
 from itertools import combinations
 
 # modules
@@ -10,7 +10,7 @@ from capacities_ml.mobius.types import MobiusMap
 
 
 # powerset
-def powerset(elements: AbstractSet[int]) -> list[frozenset[int]]:
+def powerset(elements: Set[int]) -> list[frozenset[int]]:
     """Compute the power set of a coalition."""
     items = tuple(elements)
     return [
@@ -61,7 +61,7 @@ def inverse_mobius_transform(mobius_rep: MobiusRepresentation) -> Capacity:
     if not isinstance(mobius_rep, MobiusRepresentation):
         raise TypeError("mobius_rep must be a MobiusRepresentation instance.")
 
-    features = frozenset(range(mobius_rep.n_vars))
+    features = frozenset(range(mobius_rep.n_elements))
     values: dict[frozenset[int], float] = {}
     for coalition in powerset(features):
         if coalition:

@@ -87,7 +87,7 @@ class _ChoquetNeuralMixin:
 
         # capacity parameterization shared by all hidden neurons
         sparsity = self.sparsity if self.sparsity is not None else FullCapacity()
-        compilation = sparsity.compile(self.universe.n_vars)
+        compilation = sparsity.compile(self.universe.n_elements)
         bundle = compilation.bundle
         design = capacity_design(
             matrix,
@@ -328,8 +328,8 @@ class ChoquetNeuralRegressor(_ChoquetNeuralMixin, RegressorMixin, BaseEstimator)
     ) -> "ChoquetNeuralRegressor":
         # regression target validation
         matrix, target = check_X_y(X, y, dtype=float, ensure_2d=True, ensure_min_samples=1)
-        if matrix.shape[1] != self.universe.n_vars:
-            raise ValueError(f"X has {matrix.shape[1]} features; expected {self.universe.n_vars}.")
+        if matrix.shape[1] != self.universe.n_elements:
+            raise ValueError(f"X has {matrix.shape[1]} features; expected {self.universe.n_elements}.")
         target = np.asarray(target, dtype=float)
         weights = _sample_weights(sample_weight, target.size)
         self._fit_core(matrix, target, weights, classification=False)
@@ -379,8 +379,8 @@ class ChoquetNeuralClassifier(_ChoquetNeuralMixin, ClassifierMixin, BaseEstimato
     ) -> "ChoquetNeuralClassifier":
         # input and binary-label validation
         matrix, raw_target = check_X_y(X, y, dtype=float, ensure_2d=True, ensure_min_samples=1)
-        if matrix.shape[1] != self.universe.n_vars:
-            raise ValueError(f"X has {matrix.shape[1]} features; expected {self.universe.n_vars}.")
+        if matrix.shape[1] != self.universe.n_elements:
+            raise ValueError(f"X has {matrix.shape[1]} features; expected {self.universe.n_elements}.")
         encoder = LabelEncoder()
         target = encoder.fit_transform(raw_target)
         if encoder.classes_.size != 2:

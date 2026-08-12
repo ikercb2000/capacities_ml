@@ -10,6 +10,7 @@ from capacities_ml.integrals.batch_integrals import (
 )
 from capacities_ml.integrals.choquet import mobius_choquet, ordered_choquet
 from capacities_ml.integrals.utils import coalition_indices
+from capacities_ml.risk import ProbabilityCapacity
 
 
 def build_capacity() -> Capacity:
@@ -43,6 +44,15 @@ def test_batch_choquet_integral_matches_rowwise_ordered_choquet():
     )
 
     assert np.allclose(batch_values, rowwise_values)
+
+
+def test_batch_choquet_integral_supports_dynamic_capacities():
+    X = np.array([[1.0, 3.0], [2.0, 4.0]])
+    capacity = ProbabilityCapacity([0.25, 0.75])
+
+    values = batch_choquet_integral(X, capacity)
+
+    np.testing.assert_allclose(values, [2.5, 3.5])
 
 
 def test_coalition_indices_returns_expected_indices():

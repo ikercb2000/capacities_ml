@@ -70,7 +70,7 @@ def test_capacity_and_its_internal_map_are_mutable():
     capacity.universe = VariableUniverse(("x0", "x1", "x2"))
     capacity.values.set_value({0}, 0.9)
 
-    assert capacity.universe.n_vars == 3
+    assert capacity.universe.n_elements == 3
     assert capacity.value({0}) == 0.9
 
 
@@ -90,7 +90,7 @@ def test_variable_universe_derives_cardinality_from_names():
     universe = VariableUniverse(("x0", "x1", "x2"))
 
     assert universe.var_names == ("x0", "x1", "x2")
-    assert universe.n_vars == 3
+    assert universe.n_elements == 3
     assert universe.name_to_index == {"x0": 0, "x1": 1, "x2": 2}
 
 
@@ -103,11 +103,11 @@ def test_variable_universe_allows_mutation():
     universe = VariableUniverse(("price", "quality", "risk"))
 
     universe.var_names = ("price", "quality")
-    universe.n_vars = 2
+    universe.n_elements = 2
     universe.name_to_index["extra"] = 3
 
     assert universe.var_names == ("price", "quality")
-    assert universe.n_vars == 2
+    assert universe.n_elements == 2
     assert universe.name_to_index["extra"] == 3
 
 

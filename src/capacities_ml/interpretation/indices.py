@@ -25,10 +25,10 @@ def _as_mobius(capacity: CapacityLike) -> MobiusRepresentation:
 
 # mobius terms
 def _mobius_terms(mobius: MobiusRepresentation):
-    for mask in range(1, 1 << mobius.n_vars):
+    for mask in range(1, 1 << mobius.n_elements):
         coalition = frozenset(
             feature
-            for feature in range(mobius.n_vars)
+            for feature in range(mobius.n_elements)
             if mask & (1 << feature)
         )
         yield coalition, mobius.value(coalition)
@@ -91,14 +91,14 @@ def pairwise_interactions(capacity: CapacityLike) -> dict[tuple[str, str], float
             first,
             second,
         )
-        for first, second in combinations(range(capacity.n_vars), 2)
+        for first, second in combinations(range(capacity.n_elements), 2)
     }
 
 
 # pairwise interaction matrix
 def pairwise_interaction_matrix(capacity: CapacityLike) -> np.ndarray:
     """Return a symmetric matrix of pairwise interaction indices."""
-    matrix = np.zeros((capacity.n_vars, capacity.n_vars), dtype=float)
+    matrix = np.zeros((capacity.n_elements, capacity.n_elements), dtype=float)
     for (first, second), value in pairwise_interactions(capacity).items():
         first_index = capacity.universe.name_to_index[first]
         second_index = capacity.universe.name_to_index[second]

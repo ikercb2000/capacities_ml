@@ -103,9 +103,9 @@ class ChoquisticRegression(ClassifierMixin, BaseEstimator):
         sparsity = (
             self.sparsity
             if self.sparsity is not None
-            else KAdditivity(order=self.universe.n_vars)
+            else KAdditivity(order=self.universe.n_elements)
         )
-        compilation = sparsity.compile(self.universe.n_vars)
+        compilation = sparsity.compile(self.universe.n_elements)
         design = capacity_design(
             matrix,
             compilation.bundle.parameter_masks,

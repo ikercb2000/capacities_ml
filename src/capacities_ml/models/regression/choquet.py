@@ -56,7 +56,7 @@ class ChoquetRegressor(RegressorMixin, BaseEstimator):
             raise TypeError("solver must be a Solver enum member.")
 
         sparsity = self.sparsity if self.sparsity is not None else FullCapacity()
-        compilation = sparsity.compile(self.universe.n_vars)
+        compilation = sparsity.compile(self.universe.n_elements)
         design = capacity_design(
             matrix,
             compilation.bundle.parameter_masks,

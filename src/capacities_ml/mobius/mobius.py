@@ -44,8 +44,8 @@ class MobiusRepresentation:
         return tuple(self.universe.var_names)
 
     @property
-    def n_vars(self) -> int:
-        return self.universe.n_vars
+    def n_elements(self) -> int:
+        return self.universe.n_elements
 
     def value(self, coalition: CoalitionInput) -> float:
         """Return a Möbius coefficient, or zero when it is not specified."""

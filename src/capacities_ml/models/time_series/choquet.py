@@ -90,7 +90,7 @@ class ChoquetAutoRegressor(BaseEstimator):
         # capacity design over the lag universe
         universe = VariableUniverse(tuple(f"lag_{lag}" for lag in range(1, self.lags + 1)))
         sparsity = self.sparsity if self.sparsity is not None else FullCapacity()
-        compilation = sparsity.compile(universe.n_vars)
+        compilation = sparsity.compile(universe.n_elements)
         design = capacity_design(
             lagged,
             compilation.bundle.parameter_masks,

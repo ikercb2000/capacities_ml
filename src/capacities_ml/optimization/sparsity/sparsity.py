@@ -32,7 +32,7 @@ class CapacitySparsity(ABC):
     """Generate parameters and constraints for a family of capacities."""
 
     @abstractmethod
-    def compile(self, n_vars: int) -> SparsityCompilation:
+    def compile(self, n_elements: int) -> SparsityCompilation:
         """Build the parameterization for a variable universe."""
 
 
@@ -41,10 +41,10 @@ class CapacitySparsity(ABC):
 class FullCapacity(CapacitySparsity):
     """Keep every capacity value as an optimization parameter."""
 
-    def compile(self, n_vars: int) -> SparsityCompilation:
-        parameterization = capacity_value_constraints(n_vars)
+    def compile(self, n_elements: int) -> SparsityCompilation:
+        parameterization = capacity_value_constraints(n_elements)
         initial = np.asarray(
-            [mask.bit_count() / n_vars for mask in parameterization.parameter_masks],
+            [mask.bit_count() / n_elements for mask in parameterization.parameter_masks],
             dtype=float,
         )
         return SparsityCompilation(
@@ -64,9 +64,9 @@ class KAdditivity(CapacitySparsity):
         if not isinstance(self.shape, CapacityShape):
             raise TypeError("shape must be a CapacityShape enum member.")
 
-    def compile(self, n_vars: int) -> SparsityCompilation:
+    def compile(self, n_elements: int) -> SparsityCompilation:
         bundle = mobius_capacity_constraints(
-            n_vars,
+            n_elements,
             self.order,
             shape=self.shape,
         )
@@ -78,7 +78,7 @@ class KAdditivity(CapacitySparsity):
             for position, mask in enumerate(bundle.parameter_masks)
             if mask.bit_count() == 1
         ]
-        initial[singleton_positions] = 1.0 / n_vars
+        initial[singleton_positions] = 1.0 / n_elements
         return SparsityCompilation(bundle=bundle, initial_parameters=initial)
 
 
@@ -98,14 +98,14 @@ class PairwiseInteractionSparsity(CapacitySparsity):
         if self.order < 2:
             raise ValueError("order must be at least 2 for pairwise interactions.")
 
-    def compile(self, n_vars: int) -> SparsityCompilation:
+    def compile(self, n_elements: int) -> SparsityCompilation:
         bundle = mobius_capacity_constraints(
-            n_vars,
+            n_elements,
             self.order,
             shape=self.shape,
         )
         interaction_system = pairwise_interaction_constraints(
-            n_vars,
+            n_elements,
             self.order,
             pairs=self.pairs,
             lower=self.target,
@@ -129,5 +129,5 @@ class PairwiseInteractionSparsity(CapacitySparsity):
             for position, mask in enumerate(bundle.parameter_masks)
             if mask.bit_count() == 1
         ]
-        initial[singleton_positions] = 1.0 / n_vars
+        initial[singleton_positions] = 1.0 / n_elements
         return SparsityCompilation(bundle=bundle, initial_parameters=initial)

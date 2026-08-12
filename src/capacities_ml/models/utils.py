@@ -23,9 +23,9 @@ def validate_features(
 ) -> np.ndarray:
     """Validate feature matrices using scikit-learn conventions."""
     matrix = check_array(X, dtype=float, ensure_2d=True, ensure_min_samples=1)
-    if matrix.shape[1] != universe.n_vars:
+    if matrix.shape[1] != universe.n_elements:
         raise ValueError(
-            f"X has {matrix.shape[1]} features; expected {universe.n_vars}."
+            f"X has {matrix.shape[1]} features; expected {universe.n_elements}."
         )
     if fitting and not np.all(np.isfinite(matrix)):
         raise ValueError("X must contain only finite values.")

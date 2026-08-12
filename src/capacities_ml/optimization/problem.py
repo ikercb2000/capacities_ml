@@ -118,13 +118,13 @@ class Problem:
     def __post_init__(self) -> None:
         if not isinstance(self.universe, VariableUniverse):
             raise TypeError("universe must be a VariableUniverse instance.")
-        if self.universe.n_vars < 1:
+        if self.universe.n_elements < 1:
             raise ValueError("The problem universe must contain variables.")
         if self.sparsity is not None and not isinstance(self.sparsity, CapacitySparsity):
             raise TypeError("sparsity must be a CapacitySparsity instance or None.")
         if self.sparsity is None:
             self.sparsity = FullCapacity()
-        self._compilation = self.sparsity.compile(self.universe.n_vars)
+        self._compilation = self.sparsity.compile(self.universe.n_elements)
         capacity_parameterization = self._compilation.bundle
         n_capacity_parameters = capacity_parameterization.n_parameters
 
@@ -267,14 +267,14 @@ class Problem:
 
         if self.representation is CapacityRepresentation.VALUES:
             values = {
-                subset_decoding(mask, self.universe.n_vars): value
+                subset_decoding(mask, self.universe.n_elements): value
                 for mask, value in zip(self.parameter_masks, capacity_vector)
                 if mask
             }
             return Capacity(universe=self.universe, values=values)
 
         coefficients = {
-            subset_decoding(mask, self.universe.n_vars): value
+            subset_decoding(mask, self.universe.n_elements): value
             for mask, value in zip(self.parameter_masks, capacity_vector)
         }
         return MobiusRepresentation(
