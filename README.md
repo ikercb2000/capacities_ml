@@ -1,34 +1,127 @@
 # capacities_ml
 
-A Python package for learning capacities and capacity-based machine-learning models.
+`capacities_ml` is a Python package for working with capacities, Choquet integrals,
+capacity-based machine-learning models, and non-additive risk measures.
 
-## Extended Choquet models
+The package provides the complete workflow around these objects: defining and
+validating capacities, computing Choquet integrals, learning capacities from data,
+interpreting interactions, selecting model complexity, and applying capacities to
+financial loss distributions.
 
-All supervised estimators expose scikit-learn's `fit`, `predict`, parameter and cloning
-interfaces. Predictors should normally be scaled to `[0, 1]` before fitting.
+## Main features
 
-```python
-from capacities_ml.capacities import VariableUniverse
-from capacities_ml.models import ChoquisticRegression
+- Explicit, k-additive, and Möbius capacity representations.
+- Discrete Choquet integrals for individual observations and batches.
+- Shapley values and interaction indices for capacity interpretation.
+- Scikit-learn-compatible regression and classification estimators.
+- Choquet autoregression with a pmdarima-like forecasting interface.
+- Choquet neural regressors and classifiers.
+- Capacity preprocessing, regularization, and model-selection utilities.
+- SciPy, CVXPY, and PYMOO optimization backends.
+- Distortion, spectral, and generalized risk measures.
+- Conditional and rolling risk forecasts with backtesting tools.
 
-model = ChoquisticRegression(
-    universe=VariableUniverse(("market", "volatility", "liquidity")),
-    class_weight="balanced",
-).fit(X_train, y_train)
+## Installation
 
-tail_probabilities = model.predict_proba(X_test)[:, 1]
-capacity = model.capacity_
+The project requires Python 3.12 or later. From the repository root, install the
+package and its dependencies with Poetry:
+
+```powershell
+poetry install
 ```
 
-`ChoquisticRegression` implements the paper parametrization
-`sigmoid(gamma * (C_mu(X) - beta))`. It learns a valid capacity, a positive
-scale `gamma_` and a utility threshold `beta_` constrained to `[0, 1]` by
-maximum likelihood. Its default capacity uses the full Möbius representation;
-pass `KAdditivity(order=k)` and select `k` through cross-validation to reproduce
-the paper's reduced models. Use `CapacityNormalizer`, including its
-`cost_features` option, to normalize and orient criteria before fitting.
+Commands can then be run inside the project environment:
 
-The autoregressive estimator follows the common pmdarima call pattern:
+```powershell
+poetry run python your_script.py
+poetry run pytest
+```
+
+## Capacities and Choquet integrals
+
+A capacity assigns a value to each coalition of variables. Unlike a probability
+measure, it does not need to be additive, allowing the model to represent
+complementarity and redundancy between variables.
+
+```python
+import numpy as np
+
+from capacities_ml.capacities import MobiusCapacity, VariableUniverse
+from capacities_ml.integrals.choquet import ordered_choquet
+
+universe = VariableUniverse(("quality", "cost", "speed"))
+capacity = MobiusCapacity(
+    universe=universe,
+    coefficients={
+        ("quality",): 0.35,
+        ("cost",): 0.25,
+        ("speed",): 0.20,
+        ("quality", "speed"): 0.20,
+    },
+)
+
+score = ordered_choquet(capacity, np.array([0.8, 0.4, 0.7]))
+print(score)
+```
+
+`ExplicitCapacity` stores the complete capacity table, while `MobiusCapacity`
+supports a sparse, directly evaluable Möbius representation. Both implement the
+common `BaseCapacity` interface through `event_value()` and
+`nested_event_values()`.
+
+## Machine-learning models
+
+The supervised estimators follow the scikit-learn API and can be used with
+pipelines, cross-validation, metrics, and parameter search.
+
+```python
+from sklearn.pipeline import Pipeline
+
+from capacities_ml.capacities import VariableUniverse
+from capacities_ml.models import ChoquetRegressor
+from capacities_ml.optimization import KAdditivity
+from capacities_ml.preprocessing import CapacityNormalizer
+
+universe = VariableUniverse(("profitability", "liquidity", "volatility"))
+
+model = Pipeline(
+    [
+        ("normalize", CapacityNormalizer(cost_features=["volatility"])),
+        (
+            "model",
+            ChoquetRegressor(
+                universe=universe,
+                sparsity=KAdditivity(order=2),
+            ),
+        ),
+    ]
+)
+
+model.fit(X_train, y_train)
+predictions = model.predict(X_test)
+```
+
+The available estimators are:
+
+- `ChoquetRegressor` for continuous targets.
+- `ChoquetClassifier` for direct threshold classification.
+- `ChoquisticRegression` for probabilistic binary classification.
+- `ChoquetAutoRegressor` for nonlinear autoregressive forecasting.
+- `ChoquetNeuralRegressor` and `ChoquetNeuralClassifier` for models with a
+  hidden layer of Choquet neurons.
+
+Predictors should normally be oriented and normalized before fitting. The
+`CapacityNormalizer` scales inputs and reverses cost criteria so that larger
+transformed values always have the same interpretation.
+
+Capacity complexity can be controlled with full, k-additive, or selected-pair
+representations. L1 and L2 penalties are available, and the model-selection module
+provides grids that can be passed directly to scikit-learn search objects.
+
+## Time-series models
+
+`ChoquetAutoRegressor` aggregates lagged observations through a learned capacity.
+Its interface follows the usual time-series workflow:
 
 ```python
 from capacities_ml.models import ChoquetAutoRegressor
@@ -38,33 +131,75 @@ forecast, intervals = model.predict(10, return_conf_int=True)
 model.update(y_new)
 ```
 
-It supports aligned exogenous variables through `fit(y, X)` and future values through
-`predict(n_periods, X)`, as well as `predict_in_sample`, `resid`, `aic` and `bic`.
+It also supports aligned exogenous variables, in-sample predictions, residuals,
+AIC, BIC, and stationary parameter constraints.
 
-## Model examples
+## Risk measures
 
-The non-neural models have executable examples with several observations, fitted
-parameters, predictions and diagnostics:
+The risk module applies capacities to events in a finite loss distribution. Larger
+values must represent larger losses.
 
-```powershell
-poetry run python examples/choquet_regression_synthetic_n4.py
-poetry run python examples/choquet_classifier_synthetic_n4.py
-poetry run python examples/choquistic_regression_synthetic_n3.py
-poetry run python examples/choquet_autoregression_synthetic.py
-```
-
-A trainable hidden layer of independently constrained Choquet neurons is available for
-regression and binary classification:
+It includes empirical distributions, probability and distorted capacities,
+probability envelopes, VaR, Expected Shortfall, generalized quantiles, spectral
+measures, Kusuoka representations, conditional residual bootstrapping, rolling
+capital estimation, and statistical backtesting.
 
 ```python
-from capacities_ml.models import ChoquetNeuralClassifier
+from capacities_ml.risk import (
+    ExpectedShortfallDistortion,
+    RollingRiskEstimator,
+    capital_backtest,
+)
 
-network = ChoquetNeuralClassifier(
-    universe=VariableUniverse(("market", "volatility", "liquidity")),
-    n_hidden=4,
-    activation="tanh",
-    random_state=7,
-).fit(X_train, y_train)
+estimator = RollingRiskEstimator(
+    ExpectedShortfallDistortion(alpha=0.95),
+    window=256,
+    min_periods=256,
+).fit(losses)
 
-learned_hidden_capacities = network.capacities_
+capital = estimator.predict_in_sample()
+diagnostics = capital_backtest(losses, capital)
 ```
+
+Rolling forecasts use only information preceding each forecast date. Backtesting
+utilities summarize capital breaches and provide coverage, independence, stress,
+bootstrap, and HAC diagnostics.
+
+## Package structure
+
+| Module | Purpose |
+|---|---|
+| `capacities` | Capacity objects, Möbius transforms, and validation |
+| `integrals` | Ordered, Möbius, and batch Choquet integrals |
+| `models` | Regression, classification, neural, and time-series estimators |
+| `preprocessing` | Scaling and orientation of capacity inputs |
+| `interpretation` | Shapley and interaction indices |
+| `model_selection` | Capacity-complexity parameter grids |
+| `optimization` | Objectives, constraints, penalties, sparsity, and solvers |
+| `risk` | Loss distributions, risk measures, forecasting, and backtesting |
+
+## Notebooks
+
+Guided examples are available in `notebooks/`:
+
+1. `01_capacities_and_choquet_integral.ipynb`
+2. `02_choquet_regression.ipynb`
+3. `03_choquet_classifier.ipynb`
+4. `04_choquistic_regression.ipynb`
+5. `05_optimization_backends.ipynb`
+6. `06_risk_pipeline.ipynb`
+
+The notebooks cover the main modeling workflows, preprocessing, model selection,
+regularization, interpretation, evaluation metrics, optimization backends, and the
+complete risk pipeline.
+
+## Testing
+
+Run the complete test suite with:
+
+```powershell
+poetry run pytest
+```
+
+The tests are organized by package component and include capacities, integrals,
+estimators, optimization, preprocessing, interpretation, and risk functionality.
