@@ -14,7 +14,7 @@ financial loss distributions.
 - Discrete Choquet integrals for individual observations and batches.
 - Shapley values and interaction indices for capacity interpretation.
 - Scikit-learn-compatible regression and classification estimators.
-- Choquet autoregression with a pmdarima-like forecasting interface.
+- Choquet autoregression implementing the native sktime forecasting interface.
 - Choquet neural regressors and classifiers.
 - Capacity preprocessing, regularization, and model-selection utilities.
 - SciPy, CVXPY, and PYMOO optimization backends.
@@ -130,19 +130,31 @@ provides grids that can be passed directly to scikit-learn search objects.
 
 ## Time-series models
 
-`ChoquetAutoRegressor` aggregates lagged observations through a learned capacity.
-Its interface follows the usual time-series workflow:
+`ChoquetAutoRegressor` aggregates lagged observations through a learned capacity
+and subclasses `sktime.forecasting.base.BaseForecaster`. It can therefore be used
+with sktime forecasting horizons, temporal pipelines, splitters, metrics, tuning,
+exogenous variables, prediction intervals, and update workflows.
 
 ```python
+from sktime.forecasting.base import ForecastingHorizon
+from sktime.forecasting.compose import TransformedTargetForecaster
+
 from capacities_ml_fin.ml.models import ChoquetAutoRegressor
 
-model = ChoquetAutoRegressor(lags=5).fit(y_train)
-forecast, intervals = model.predict(10, return_conf_int=True)
-model.update(y_new)
+fh = ForecastingHorizon(y_test.index, is_relative=False)
+model = TransformedTargetForecaster(
+    [("forecast", ChoquetAutoRegressor(lags=5))]
+)
+model.fit(y_train, X=X_train, fh=fh)
+forecast = model.predict(X=X_test)
+intervals = model.predict_interval(X=X_test, coverage=0.95)
+model.update(y_new, X=X_new)
 ```
 
-It also supports aligned exogenous variables, in-sample predictions, residuals,
-AIC, BIC, and stationary parameter constraints.
+The model exposes one-step training fitted values, residuals, AIC, BIC, and a
+stationary contraction constraint. Input `y` should use a supported pandas time
+index; when exogenous data are used, `X` must be indexed at the same dates and
+must cover every recursive future step.
 
 ## Risk measures
 
