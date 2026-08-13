@@ -146,7 +146,7 @@ def test_k_additive_capacity_derives_coalitions_above_k():
         k=2,
     )
 
-    mobius_rep = mobius_transform(capacity)
+    mobius_capacity = mobius_transform(capacity)
 
     assert capacity.value(("x0", "x1", "x2")) == pytest.approx(1.0)
-    assert mobius_rep.value(("x0", "x1", "x2")) == pytest.approx(0.0)
+    assert mobius_capacity.value(("x0", "x1", "x2")) == pytest.approx(0.0)

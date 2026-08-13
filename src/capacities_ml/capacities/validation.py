@@ -175,10 +175,10 @@ def check_k_additivity(capacities: CapacityMap, k: int, n_features: int, toleran
     if tolerance < 0:
         raise ValueError("tolerance must be non-negative.")
 
-    mobius_rep = _mobius_transform_map(capacities)
+    mobius_map = _mobius_transform_map(capacities)
     has_non_zero_order_k_term = False
 
-    for coefficient in mobius_rep:
+    for coefficient in mobius_map:
         coalition_size = len(coefficient.coalition)
 
         if coalition_size == k and not isclose(coefficient.value,0.0,abs_tol=tolerance):

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from capacities_ml.capacities import MobiusRepresentation, VariableUniverse
+from capacities_ml.capacities import MobiusCapacity, VariableUniverse
 from capacities_ml.optimization import (
     CapacityRepresentation,
     ConstraintBundle,
@@ -38,11 +38,11 @@ def test_mobius_problem_decodes_sparse_coefficients():
         initial_parameters=np.array([0.3, 0.7]),
     )
 
-    mobius_representation = problem.decode(np.array([0.3, 0.7]))
+    mobius_capacity = problem.decode(np.array([0.3, 0.7]))
 
-    assert isinstance(mobius_representation, MobiusRepresentation)
-    assert mobius_representation.value({0}) == 0.3
-    assert mobius_representation.value({0, 1}) == 0.0
+    assert isinstance(mobius_capacity, MobiusCapacity)
+    assert mobius_capacity.value({0}) == 0.3
+    assert mobius_capacity.value({0, 1}) == 0.0
 
 
 def test_capacity_sparsity_builds_k_additive_problem_automatically():

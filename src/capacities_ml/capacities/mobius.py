@@ -20,9 +20,9 @@ from capacities_ml.capacities.utils import (
 from capacities_ml.capacities.validation import check_mobius_capacity
 
 
-# Mobius representation class
+# Mobius capacity class
 @dataclass
-class MobiusRepresentation(BaseCapacity):
+class MobiusCapacity(BaseCapacity):
     """Sparse Mobius coefficients defining an evaluable capacity."""
 
     universe: VariableUniverse
@@ -110,13 +110,13 @@ class MobiusRepresentation(BaseCapacity):
 
 
 # Mobius transform
-def mobius_transform(capacity: ExplicitCapacity) -> MobiusRepresentation:
+def mobius_transform(capacity: ExplicitCapacity) -> MobiusCapacity:
     """Compute the Mobius representation of an explicit capacity."""
     if not isinstance(capacity, ExplicitCapacity):
         raise TypeError("capacity must be an ExplicitCapacity instance.")
 
     coefficient_map = _mobius_transform_map(capacity.values)
-    return MobiusRepresentation(
+    return MobiusCapacity(
         universe=capacity.universe,
         coefficients=coefficient_map.to_lookup(),
     )
@@ -124,19 +124,19 @@ def mobius_transform(capacity: ExplicitCapacity) -> MobiusRepresentation:
 
 # inverse Mobius transform
 def inverse_mobius_transform(
-    mobius_rep: MobiusRepresentation,
+    mobius_capacity: MobiusCapacity,
 ) -> ExplicitCapacity:
     """Compute an explicit capacity from its Mobius representation."""
-    if not isinstance(mobius_rep, MobiusRepresentation):
-        raise TypeError("mobius_rep must be a MobiusRepresentation instance.")
+    if not isinstance(mobius_capacity, MobiusCapacity):
+        raise TypeError("mobius_capacity must be a MobiusCapacity instance.")
 
-    features = frozenset(range(mobius_rep.n_elements))
+    features = frozenset(range(mobius_capacity.n_elements))
     values: dict[frozenset[int], float] = {}
     for coalition in powerset(features):
         if coalition:
             values[coalition] = sum(
-                mobius_rep.value(subset)
+                mobius_capacity.value(subset)
                 for subset in powerset(coalition)
             )
 
-    return ExplicitCapacity(universe=mobius_rep.universe, values=values)
+    return ExplicitCapacity(universe=mobius_capacity.universe, values=values)

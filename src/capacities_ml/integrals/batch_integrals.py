@@ -6,7 +6,7 @@ import numpy as np
 from capacities_ml.capacities import (
     BaseCapacity,
     ExplicitCapacity,
-    MobiusRepresentation,
+    MobiusCapacity,
 )
 from capacities_ml.integrals.choquet import ordered_choquet
 from capacities_ml.integrals.utils import (
@@ -58,7 +58,7 @@ def batch_choquet_integral(X: np.ndarray, capacity: BaseCapacity) -> np.ndarray:
     if isinstance(capacity, ExplicitCapacity):
         values_by_mask = capacity_values_by_mask(capacity)
         return capacity_design_matrix(matrix) @ values_by_mask
-    if isinstance(capacity, MobiusRepresentation):
+    if isinstance(capacity, MobiusCapacity):
         return batch_choquet_integral_mobius(matrix, capacity)
     return np.asarray([ordered_choquet(capacity, row) for row in matrix])
 
@@ -78,18 +78,18 @@ def mobius_design_matrix(X: np.ndarray,coalitions: Sequence[Set[int]]) -> np.nda
 
 
 # batch integral with mobius coefficients
-def batch_choquet_integral_mobius(X: np.ndarray, mobius_rep: MobiusRepresentation) -> np.ndarray:
+def batch_choquet_integral_mobius(X: np.ndarray, mobius_capacity: MobiusCapacity) -> np.ndarray:
     """
     Evaluate several Choquet integrals using the Möbius representation.
     """
     matrix = as_matrix(X)
-    if matrix.shape[1] != mobius_rep.n_elements:
+    if matrix.shape[1] != mobius_capacity.n_elements:
         raise ValueError(
-            f"The Möbius representation expects {mobius_rep.n_elements} variables, "
+            f"The Möbius capacity expects {mobius_capacity.n_elements} variables, "
             f"but X has {matrix.shape[1]}."
         )
 
-    coalitions, coefficients = mobius_coalitions_and_coefficients(mobius_rep)
+    coalitions, coefficients = mobius_coalitions_and_coefficients(mobius_capacity)
     design = mobius_design_matrix(matrix, coalitions=coalitions)
 
     if coefficients.shape != (design.shape[1],):

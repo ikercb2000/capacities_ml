@@ -2,7 +2,7 @@
 import numpy as np
 
 # modules
-from capacities_ml.capacities import BaseCapacity, MobiusRepresentation
+from capacities_ml.capacities import BaseCapacity, MobiusCapacity
 from capacities_ml.integrals.utils import as_vector, coalition_indices
 
 # ordered choquet integral
@@ -30,20 +30,20 @@ def ordered_choquet(capacity: BaseCapacity, x: np.ndarray) -> float:
     return float(np.dot(increments, capacity_values))
 
 # integral with mobius coefficients
-def mobius_choquet(mobius_rep: MobiusRepresentation, x: np.ndarray) -> float:
+def mobius_choquet(mobius_capacity: MobiusCapacity, x: np.ndarray) -> float:
     """
     Compute the discrete Choquet integral from a Möbius representation.
     """
     vector = as_vector(x)
-    if vector.size != mobius_rep.n_elements:
+    if vector.size != mobius_capacity.n_elements:
         raise ValueError(
-            f"The Möbius representation expects {mobius_rep.n_elements} variables, "
+            f"The Möbius capacity expects {mobius_capacity.n_elements} variables, "
             f"but x has {vector.size}."
         )
 
     choquet_value = 0.0
 
-    for coefficient in mobius_rep._coefficient_map:
+    for coefficient in mobius_capacity._coefficient_map:
         coalition = coefficient.coalition
 
         if not coalition:

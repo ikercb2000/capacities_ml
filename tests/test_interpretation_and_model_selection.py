@@ -1,6 +1,6 @@
 import numpy as np
 
-from capacities_ml.capacities import MobiusRepresentation, VariableUniverse
+from capacities_ml.capacities import MobiusCapacity, VariableUniverse
 from capacities_ml.interpretation import (
     interaction_signs,
     pairwise_interaction_index,
@@ -23,7 +23,7 @@ from capacities_ml.risk import ProbabilityCapacity
 
 def test_shapley_and_pairwise_interaction_indices_use_mobius_coefficients():
     universe = VariableUniverse(("x0", "x1", "x2"))
-    mobius = MobiusRepresentation(
+    mobius = MobiusCapacity(
         universe,
         {
             frozenset({0}): 0.3,

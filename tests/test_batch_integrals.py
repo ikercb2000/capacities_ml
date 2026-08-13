@@ -104,12 +104,12 @@ def test_batch_choquet_integral_mobius_matches_rowwise_mobius_choquet():
         ]
     )
 
-    mobius_rep = mobius_transform(capacity)
-    batch_values = batch_choquet_integral_mobius(X, mobius_rep)
+    mobius_capacity = mobius_transform(capacity)
+    batch_values = batch_choquet_integral_mobius(X, mobius_capacity)
     rowwise_values = np.array(
-        [mobius_choquet(mobius_rep, row) for row in X],
+        [mobius_choquet(mobius_capacity, row) for row in X],
         dtype=float,
     )
 
     assert np.allclose(batch_values, rowwise_values)
-    assert np.allclose(batch_choquet_integral(X, mobius_rep), rowwise_values)
+    assert np.allclose(batch_choquet_integral(X, mobius_capacity), rowwise_values)

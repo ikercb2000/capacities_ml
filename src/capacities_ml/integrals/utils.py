@@ -4,7 +4,7 @@ from collections.abc import Set
 import numpy as np
 
 # modules
-from capacities_ml.capacities import ExplicitCapacity, MobiusRepresentation
+from capacities_ml.capacities import ExplicitCapacity, MobiusCapacity
 from capacities_ml.capacities.utils import subset_encoding
 
 # transform array as vector
@@ -55,13 +55,13 @@ def capacity_values_by_mask(capacity: ExplicitCapacity) -> np.ndarray:
 
 
 # mobius terms and coefficients
-def mobius_coalitions_and_coefficients(mobius_rep: MobiusRepresentation) -> tuple[tuple[frozenset[int], ...], np.ndarray]:
+def mobius_coalitions_and_coefficients(mobius_capacity: MobiusCapacity) -> tuple[tuple[frozenset[int], ...], np.ndarray]:
     """
     Return aligned non-empty coalitions and Möbius coefficients.
     """
     terms = tuple(
         coefficient
-        for coefficient in mobius_rep._coefficient_map
+        for coefficient in mobius_capacity._coefficient_map
         if coefficient.coalition
     )
     coalitions = tuple(term.coalition for term in terms)

@@ -9,7 +9,7 @@ from numpy.typing import ArrayLike, NDArray
 # modules
 from capacities_ml.capacities import (
     ExplicitCapacity,
-    MobiusRepresentation,
+    MobiusCapacity,
     VariableUniverse,
 )
 from capacities_ml.capacities.utils import subset_decoding
@@ -259,7 +259,7 @@ class Problem:
     def max_order(self) -> int:
         return self.parameterization.max_order
 
-    def decode(self, parameters: ArrayLike) -> ExplicitCapacity | MobiusRepresentation:
+    def decode(self, parameters: ArrayLike) -> ExplicitCapacity | MobiusCapacity:
         """Convert optimized parameters into a public capacity representation."""
         vector = np.asarray(parameters, dtype=float)
         if vector.shape != (self.n_parameters,):
@@ -280,12 +280,12 @@ class Problem:
             subset_decoding(mask, self.universe.n_elements): value
             for mask, value in zip(self.parameter_masks, capacity_vector)
         }
-        return MobiusRepresentation(
+        return MobiusCapacity(
             universe=self.universe,
             coefficients=coefficients,
         )
 
-    def decode_result(self, result: OptimizationResult) -> ExplicitCapacity | MobiusRepresentation:
+    def decode_result(self, result: OptimizationResult) -> ExplicitCapacity | MobiusCapacity:
         """Convert a solver result into a public capacity representation."""
         return self.decode(result.parameters)
 
