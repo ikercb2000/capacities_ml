@@ -2,9 +2,8 @@ import pytest
 
 # modules
 from capacities_ml.capacities import ExplicitCapacity, KAdditiveCapacity, VariableUniverse
-from capacities_ml.capacities.types import CapacityMap, CoalitionValue
-from capacities_ml.mobius.types import MobiusMap
-from capacities_ml.mobius import mobius_transform
+from capacities_ml.capacities import mobius_transform
+from capacities_ml.capacities.types import CapacityMap, CoalitionValue, MobiusMap
 
 
 def test_coalition_value_normalizes_to_frozenset():

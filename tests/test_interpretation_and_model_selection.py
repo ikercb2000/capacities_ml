@@ -1,11 +1,10 @@
 import numpy as np
 
-from capacities_ml.capacities import VariableUniverse
+from capacities_ml.capacities import MobiusRepresentation, VariableUniverse
 from capacities_ml.interpretation import (
     pairwise_interaction_index,
     shapley_indices,
 )
-from capacities_ml.mobius import MobiusRepresentation
 from capacities_ml.model_selection import (
     capacity_parameter_grid,
     capacity_shape_grid,

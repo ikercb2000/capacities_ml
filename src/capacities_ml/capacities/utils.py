@@ -1,15 +1,32 @@
 # imports
 from collections.abc import Iterable, Set
+from itertools import combinations
 import numpy as np
 from numpy.typing import ArrayLike
 
 # modules
-from capacities_ml.capacities.types import CapacityMap, VariableUniverseLike
+from capacities_ml.capacities.types import (
+    CapacityMap,
+    CoalitionValue,
+    MobiusMap,
+    VariableUniverseLike,
+)
 
 
 # aliases
 CoalitionMember = int | str
 CoalitionInput = CoalitionMember | Iterable[CoalitionMember]
+
+
+# powerset
+def powerset(elements: Set[int]) -> list[frozenset[int]]:
+    """Compute the power set of a coalition."""
+    items = tuple(elements)
+    return [
+        frozenset(subset)
+        for size in range(len(items) + 1)
+        for subset in combinations(items, size)
+    ]
 
 # event mask validation
 def _event_mask(event: ArrayLike, n_elements: int) -> np.ndarray:
@@ -148,3 +165,25 @@ def map_capacities(capacities: CapacityMap, n_elements: int) -> dict[int, float]
         raise ValueError(f"Missing coalitions: {missing_coalitions}.")
 
     return mapping
+
+
+# internal Mobius transform
+def _mobius_transform_map(capacities: CapacityMap) -> MobiusMap:
+    """Transform an internal capacity map into an internal Mobius map."""
+    mobius_coefficients: list[CoalitionValue] = []
+    for capacity_value in capacities:
+        mobius_coefficient = 0.0
+        for subset in powerset(capacity_value.coalition):
+            subset_value = capacities.get_value(subset)
+            if subset_value is None:
+                raise ValueError(
+                    f"Missing coalition in capacity map: {set(subset)}."
+                )
+            mobius_coefficient += (
+                (-1) ** (len(capacity_value.coalition) - len(subset))
+            ) * subset_value
+        mobius_coefficients.append(
+            CoalitionValue(capacity_value.coalition, mobius_coefficient)
+        )
+
+    return MobiusMap(mobius_coefficients=mobius_coefficients)

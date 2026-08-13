@@ -3,9 +3,12 @@ from collections.abc import Sequence, Set
 import numpy as np
 
 # modules
-from capacities_ml.capacities import BaseCapacity, ExplicitCapacity
+from capacities_ml.capacities import (
+    BaseCapacity,
+    ExplicitCapacity,
+    MobiusRepresentation,
+)
 from capacities_ml.integrals.choquet import ordered_choquet
-from capacities_ml.mobius import MobiusRepresentation
 from capacities_ml.integrals.utils import (
     as_matrix,
     capacity_values_by_mask,

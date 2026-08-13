@@ -1,8 +1,7 @@
 import numpy as np
 import pytest
 
-from capacities_ml.capacities import VariableUniverse
-from capacities_ml.mobius import MobiusRepresentation
+from capacities_ml.capacities import MobiusRepresentation, VariableUniverse
 from capacities_ml.optimization import (
     CapacityRepresentation,
     ConstraintBundle,

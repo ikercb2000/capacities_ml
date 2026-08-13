@@ -7,9 +7,12 @@ import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
 # modules
-from capacities_ml.capacities.capacities import ExplicitCapacity, VariableUniverse
+from capacities_ml.capacities import (
+    ExplicitCapacity,
+    MobiusRepresentation,
+    VariableUniverse,
+)
 from capacities_ml.capacities.utils import subset_decoding
-from capacities_ml.mobius import MobiusRepresentation
 from capacities_ml.optimization.constraints import (
     ConstraintBundle,
     LinearConstraintSystem,

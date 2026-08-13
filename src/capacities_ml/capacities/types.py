@@ -107,3 +107,23 @@ class CapacityMap(CoalitionMap):
         if not frozen_coalition:
             raise ValueError("The empty coalition cannot be removed.")
         super().remove_value(frozen_coalition)
+
+
+# Mobius mapping
+@dataclass
+class MobiusMap(CoalitionMap):
+    """Mutable, potentially sparse Mobius coefficients."""
+
+    mobius_coefficients: InitVar[Iterable[CoalitionValue]]
+
+    def __post_init__(
+        self,
+        mobius_coefficients: Iterable[CoalitionValue],
+    ) -> None:
+        self.lookup_dict = {}
+
+        for coalition_value in mobius_coefficients:
+            coalition = coalition_value.coalition
+            if coalition in self.lookup_dict:
+                raise ValueError(f"Duplicate coalition found: {set(coalition)}.")
+            self.set_value(coalition, coalition_value.value)

@@ -1,12 +1,11 @@
 import numpy as np
+import pytest
 
 from capacities_ml.capacities import (
     BaseCapacity,
     ExplicitCapacity,
-    VariableUniverse,
-)
-from capacities_ml.mobius import (
     MobiusRepresentation,
+    VariableUniverse,
     inverse_mobius_transform,
     mobius_transform,
 )
@@ -110,14 +109,77 @@ def test_mobius_representation_supports_names_and_sparse_coefficients():
         universe=VariableUniverse(("price", "quality")),
         coefficients={
             "price": 0.2,
-            ("price", "quality"): 0.3,
+            ("price", "quality"): 0.8,
         },
     )
 
     assert mobius_rep.value("price") == 0.2
-    assert mobius_rep.value({0, "quality"}) == 0.3
+    assert mobius_rep.value({0, "quality"}) == 0.8
     assert mobius_rep.value("quality") == 0.0
     assert mobius_rep.to_named_dict() == {
         ("price",): 0.2,
-        ("price", "quality"): 0.3,
+        ("price", "quality"): 0.8,
     }
+
+
+def test_mobius_representation_accepts_valid_negative_interaction():
+    mobius_rep = MobiusRepresentation(
+        universe=VariableUniverse(("x0", "x1")),
+        coefficients={
+            "x0": 0.6,
+            "x1": 0.6,
+            ("x0", "x1"): -0.2,
+        },
+    )
+
+    assert mobius_rep.event_value([True, True]) == pytest.approx(1.0)
+    assert mobius_rep.event_value([True, False]) == pytest.approx(0.6)
+
+
+def test_mobius_representation_rejects_invalid_normalization():
+    with pytest.raises(ValueError, match="must sum to 1"):
+        MobiusRepresentation(
+            universe=VariableUniverse(("x0", "x1")),
+            coefficients={"x0": 0.2, "x1": 0.3},
+        )
+
+
+def test_mobius_representation_rejects_non_monotone_coefficients():
+    with pytest.raises(ValueError, match="Breach in monotonicity"):
+        MobiusRepresentation(
+            universe=VariableUniverse(("x0", "x1")),
+            coefficients={
+                "x0": 0.1,
+                "x1": 1.1,
+                ("x0", "x1"): -0.2,
+            },
+        )
+
+
+def test_mobius_representation_checks_higher_order_marginals():
+    with pytest.raises(ValueError, match="Breach in monotonicity"):
+        MobiusRepresentation(
+            universe=VariableUniverse(("x0", "x1", "x2")),
+            coefficients={
+                "x0": 0.1,
+                "x1": 0.6,
+                "x2": 0.6,
+                ("x0", "x1", "x2"): -0.3,
+            },
+        )
+
+
+def test_mobius_representation_rejects_nonzero_empty_coefficient():
+    with pytest.raises(ValueError, match="empty-coalition"):
+        MobiusRepresentation(
+            universe=VariableUniverse(("x0",)),
+            coefficients={(): 0.1, "x0": 0.9},
+        )
+
+
+def test_mobius_representation_rejects_non_finite_coefficient():
+    with pytest.raises(ValueError, match="must be finite"):
+        MobiusRepresentation(
+            universe=VariableUniverse(("x0",)),
+            coefficients={"x0": np.nan},
+        )

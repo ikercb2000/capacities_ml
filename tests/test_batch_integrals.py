@@ -1,8 +1,11 @@
 import numpy as np
 import pytest
 
-from capacities_ml.capacities.capacities import ExplicitCapacity, VariableUniverse
-from capacities_ml.mobius import mobius_transform
+from capacities_ml.capacities import (
+    ExplicitCapacity,
+    VariableUniverse,
+    mobius_transform,
+)
 from capacities_ml.integrals.batch_integrals import (
     batch_choquet_integral,
     batch_choquet_integral_mobius,

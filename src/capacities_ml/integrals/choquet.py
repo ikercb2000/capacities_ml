@@ -2,8 +2,7 @@
 import numpy as np
 
 # modules
-from capacities_ml.capacities import BaseCapacity
-from capacities_ml.mobius import MobiusRepresentation
+from capacities_ml.capacities import BaseCapacity, MobiusRepresentation
 from capacities_ml.integrals.utils import as_vector, coalition_indices
 
 # ordered choquet integral

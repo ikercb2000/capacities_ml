@@ -6,9 +6,12 @@ from typing import TypeAlias
 import numpy as np
 
 # modules
-from capacities_ml.capacities import ExplicitCapacity
+from capacities_ml.capacities import (
+    ExplicitCapacity,
+    MobiusRepresentation,
+    mobius_transform,
+)
 from capacities_ml.capacities.utils import normalize_coalition
-from capacities_ml.mobius import MobiusRepresentation, mobius_transform
 
 # interpretation aliases
 CapacityLike: TypeAlias = ExplicitCapacity | MobiusRepresentation

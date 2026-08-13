@@ -4,9 +4,8 @@ from collections.abc import Set
 import numpy as np
 
 # modules
-from capacities_ml.capacities.capacities import ExplicitCapacity
+from capacities_ml.capacities import ExplicitCapacity, MobiusRepresentation
 from capacities_ml.capacities.utils import subset_encoding
-from capacities_ml.mobius import MobiusRepresentation
 
 # transform array as vector
 def as_vector(x: np.ndarray) -> np.ndarray:
