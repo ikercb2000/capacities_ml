@@ -24,13 +24,13 @@ from capacities_ml_fin.risk import ProbabilityCapacity
 def test_shapley_and_pairwise_interaction_indices_use_mobius_coefficients():
     universe = VariableUniverse(("x0", "x1", "x2"))
     mobius = MobiusCapacity(
-        universe,
-        {
+        coefficients={
             frozenset({0}): 0.3,
             frozenset({1}): 0.3,
             frozenset({2}): 0.2,
             frozenset({0, 1}): 0.2,
         },
+        universe=universe,
     )
 
     shapley = shapley_indices(mobius)

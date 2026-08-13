@@ -55,12 +55,10 @@ complementarity and redundancy between variables.
 ```python
 import numpy as np
 
-from capacities_ml_fin.base.capacities import MobiusCapacity, VariableUniverse
+from capacities_ml_fin.base.capacities import MobiusCapacity
 from capacities_ml_fin.base.integrals.choquet import ordered_choquet
 
-universe = VariableUniverse(("quality", "cost", "speed"))
 capacity = MobiusCapacity(
-    universe=universe,
     coefficients={
         ("quality",): 0.35,
         ("cost",): 0.25,
@@ -86,12 +84,9 @@ pipelines, cross-validation, metrics, and parameter search.
 ```python
 from sklearn.pipeline import Pipeline
 
-from capacities_ml_fin.base.capacities import VariableUniverse
 from capacities_ml_fin.ml.models import ChoquetRegressor
 from capacities_ml_fin.ml.optimization import KAdditivity
 from capacities_ml_fin.ml.preprocessing import CapacityNormalizer
-
-universe = VariableUniverse(("profitability", "liquidity", "volatility"))
 
 model = Pipeline(
     [
@@ -99,16 +94,20 @@ model = Pipeline(
         (
             "model",
             ChoquetRegressor(
-                universe=universe,
                 sparsity=KAdditivity(order=2),
             ),
         ),
     ]
-)
+).set_output(transform="pandas")
 
 model.fit(X_train, y_train)
 predictions = model.predict(X_test)
 ```
+
+Capacity objects infer names from named coalition keys. Supervised estimators
+infer them from DataFrame columns, or generate `x0`, `x1`, ... for array input.
+For an intentionally sparse capacity whose keys omit some variables, pass
+`n_elements=` or `var_names=` to state the otherwise unknowable elements.
 
 The available estimators are:
 

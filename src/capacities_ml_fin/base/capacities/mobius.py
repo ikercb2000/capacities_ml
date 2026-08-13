@@ -1,12 +1,15 @@
 # imports
-from collections.abc import Mapping
-from dataclasses import InitVar, dataclass, field
+from collections.abc import Iterable, Mapping
 import numpy as np
 from numpy.typing import ArrayLike
 
 # modules
 from capacities_ml_fin.base.capacities.base import BaseCapacity
-from capacities_ml_fin.base.capacities.capacities import ExplicitCapacity, VariableUniverse
+from capacities_ml_fin.base.capacities.capacities import (
+    ExplicitCapacity,
+    VariableUniverse,
+    resolve_universe,
+)
 from capacities_ml_fin.base.capacities.types import CoalitionValue, MobiusMap
 from capacities_ml_fin.base.capacities.utils import (
     CoalitionInput,
@@ -21,22 +24,25 @@ from capacities_ml_fin.base.capacities.validation import check_mobius_capacity
 
 
 # Mobius capacity class
-@dataclass
 class MobiusCapacity(BaseCapacity):
     """Sparse Mobius coefficients defining an evaluable capacity."""
 
-    universe: VariableUniverse
-    coefficients: InitVar[Mapping[CoalitionInput, float]]
-    validation_tolerance: float = field(default=1e-9, repr=False)
-    _coefficient_map: MobiusMap = field(init=False, repr=False)
-
-    def __post_init__(
+    def __init__(
         self,
         coefficients: Mapping[CoalitionInput, float],
+        *,
+        universe: VariableUniverse | None = None,
+        n_elements: int | None = None,
+        var_names: Iterable[str] | None = None,
+        validation_tolerance: float = 1e-9,
     ) -> None:
-        if not isinstance(self.universe, VariableUniverse):
-            raise TypeError("universe must be a VariableUniverse instance.")
-
+        self.universe = resolve_universe(
+            coefficients,
+            universe=universe,
+            n_elements=n_elements,
+            var_names=var_names,
+        )
+        self.validation_tolerance = validation_tolerance
         self._coefficient_map = MobiusMap(
             mobius_coefficients=[
                 CoalitionValue(
@@ -117,8 +123,8 @@ def mobius_transform(capacity: ExplicitCapacity) -> MobiusCapacity:
 
     coefficient_map = _mobius_transform_map(capacity.values)
     return MobiusCapacity(
-        universe=capacity.universe,
         coefficients=coefficient_map.to_lookup(),
+        universe=capacity.universe,
     )
 
 
@@ -139,4 +145,4 @@ def inverse_mobius_transform(
                 for subset in powerset(coalition)
             )
 
-    return ExplicitCapacity(universe=mobius_capacity.universe, values=values)
+    return ExplicitCapacity(values=values, universe=mobius_capacity.universe)

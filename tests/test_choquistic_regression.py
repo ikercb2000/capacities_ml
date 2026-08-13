@@ -2,7 +2,6 @@ import numpy as np
 import pytest
 from sklearn.base import clone
 
-from capacities_ml_fin.base.capacities import VariableUniverse
 from capacities_ml_fin.base.integrals.batch_integrals import batch_choquet_integral_mobius
 from capacities_ml_fin.ml.models import ChoquisticRegression
 from capacities_ml_fin.ml.optimization import CapacityRepresentation, L2Penalty
@@ -14,7 +13,6 @@ def test_choquistic_regression_is_probabilistic_and_cloneable(
     X, y = binary_classification_sample
     penalty = L2Penalty(weight=0.001, selection=[0])
     model = ChoquisticRegression(
-        universe=VariableUniverse(("x0", "x1")),
         class_weight="balanced",
         penalty=penalty,
     ).fit(X, y)
@@ -33,6 +31,7 @@ def test_choquistic_regression_is_probabilistic_and_cloneable(
     assert beta_slice.stop - beta_slice.start == 1
     assert model.problem_.representation is CapacityRepresentation.MOBIUS
     assert model.problem_.objective.penalty is penalty
+    assert model.universe_.var_names == ("x0", "x1")
     utilities = batch_choquet_integral_mobius(X, model.capacity_)
     np.testing.assert_allclose(model.utility_function(X), utilities)
     np.testing.assert_allclose(
@@ -46,7 +45,7 @@ def test_choquistic_regression_requires_normalized_predictors(
     binary_classification_sample,
 ):
     X, y = binary_classification_sample
-    model = ChoquisticRegression(universe=VariableUniverse(("x0", "x1")))
+    model = ChoquisticRegression()
 
     with pytest.raises(ValueError, match=r"\[0, 1\]"):
         model.fit(2.0 * X, y)
@@ -62,7 +61,6 @@ def test_choquistic_regression_is_serializable(
 ):
     X, y = binary_classification_sample
     model = ChoquisticRegression(
-        universe=VariableUniverse(("x0", "x1")),
         class_weight="balanced",
     ).fit(X, y)
 

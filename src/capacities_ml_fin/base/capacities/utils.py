@@ -1,6 +1,7 @@
 # imports
 from collections.abc import Iterable, Set
 from itertools import combinations
+from numbers import Integral
 import numpy as np
 from numpy.typing import ArrayLike
 
@@ -63,7 +64,11 @@ def normalize_coalition(
     coalition: CoalitionInput,
 ) -> frozenset[int]:
     """Convert a coalition expressed with names or indices into indices."""
-    members = (coalition,) if isinstance(coalition, (str, int)) else tuple(coalition)
+    members = (
+        (coalition,)
+        if isinstance(coalition, (str, Integral))
+        else tuple(coalition)
+    )
     normalized: set[int] = set()
 
     for member in members:
@@ -74,13 +79,14 @@ def normalize_coalition(
                 raise KeyError(f"Unknown variable name: {member}.") from exc
             continue
 
-        if isinstance(member, int):
-            if not 0 <= member < universe.n_elements:
+        if isinstance(member, Integral) and not isinstance(member, bool):
+            index = int(member)
+            if not 0 <= index < universe.n_elements:
                 raise ValueError(
-                    f"Variable index {member} is invalid for "
+                    f"Variable index {index} is invalid for "
                     f"{universe.n_elements} variables."
                 )
-            normalized.add(member)
+            normalized.add(index)
             continue
 
         raise TypeError(

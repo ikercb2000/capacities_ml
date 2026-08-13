@@ -1,6 +1,7 @@
 # imports
 from collections.abc import Iterable, Mapping
-from dataclasses import InitVar, dataclass, field
+from dataclasses import dataclass, field
+from numbers import Integral
 import numpy as np
 from numpy.typing import ArrayLike
 
@@ -18,7 +19,7 @@ from capacities_ml_fin.base.capacities.validation import check_monotonicity
 # variable universe class
 @dataclass
 class VariableUniverse:
-    """Names and index mapping of the variables used by a capacity."""
+    """Names and index mapping inferred or supplied for a capacity."""
 
     var_names: Iterable[str]
     n_elements: int = field(init=False)
@@ -40,18 +41,108 @@ class VariableUniverse:
             name: index for index, name in enumerate(var_names)
         }
 
+    @classmethod
+    def from_size(cls, n_elements: int) -> "VariableUniverse":
+        """Create a universe with generated names ``x0``, ``x1``, ... ."""
+        if isinstance(n_elements, bool) or not isinstance(n_elements, Integral):
+            raise TypeError("n_elements must be an integer.")
+        if int(n_elements) < 1:
+            raise ValueError("n_elements must be positive.")
+        return cls(tuple(f"x{index}" for index in range(int(n_elements))))
+
+    @classmethod
+    def from_coalitions(
+        cls,
+        coalitions: Iterable[CoalitionInput],
+    ) -> "VariableUniverse":
+        """Infer the smallest universe containing all observed members."""
+        observed: list[int | str] = []
+        seen: set[int | str] = set()
+        for coalition in coalitions:
+            members = (
+                (coalition,)
+                if isinstance(coalition, (str, Integral))
+                else tuple(coalition)
+            )
+            for member in members:
+                if (
+                    isinstance(member, bool)
+                    or not isinstance(member, (str, Integral))
+                ):
+                    raise TypeError(
+                        "Coalitions must contain only variable names or "
+                        "integer indices."
+                    )
+                normalized_member = (
+                    int(member) if isinstance(member, Integral) else member
+                )
+                if normalized_member not in seen:
+                    seen.add(normalized_member)
+                    observed.append(normalized_member)
+
+        if not observed:
+            raise ValueError(
+                "The universe cannot be inferred from empty coalitions. "
+                "Provide n_elements or var_names."
+            )
+        if all(isinstance(member, str) for member in observed):
+            return cls(tuple(observed))
+        if all(isinstance(member, int) for member in observed):
+            if any(member < 0 for member in observed):
+                raise ValueError("Variable indices must be non-negative.")
+            return cls.from_size(max(observed) + 1)
+        raise ValueError(
+            "A universe cannot be inferred from mixed names and indices. "
+            "Provide universe or var_names explicitly."
+        )
+
+
+# universe resolution
+def resolve_universe(
+    coalitions: Iterable[CoalitionInput],
+    *,
+    universe: VariableUniverse | None = None,
+    n_elements: int | None = None,
+    var_names: Iterable[str] | None = None,
+) -> VariableUniverse:
+    """Resolve an explicit universe or infer the smallest observed universe."""
+    specified = sum(
+        option is not None
+        for option in (universe, n_elements, var_names)
+    )
+    if specified > 1:
+        raise ValueError(
+            "Use only one of universe, n_elements or var_names."
+        )
+    if universe is not None:
+        if not isinstance(universe, VariableUniverse):
+            raise TypeError("universe must be a VariableUniverse instance.")
+        return universe
+    if var_names is not None:
+        return VariableUniverse(var_names)
+    if n_elements is not None:
+        return VariableUniverse.from_size(n_elements)
+    return VariableUniverse.from_coalitions(coalitions)
+
 
 # explicit capacity class
-@dataclass
 class ExplicitCapacity(BaseCapacity):
     """A normalized monotone set function over a fixed feature set."""
 
-    universe: VariableUniverse
-    values: InitVar[Mapping[CoalitionInput, float]]
-
-    def __post_init__(self, values: Mapping[CoalitionInput, float]) -> None:
-        if not isinstance(self.universe, VariableUniverse):
-            raise TypeError("universe must be a VariableUniverse instance.")
+    def __init__(
+        self,
+        values: Mapping[CoalitionInput, float],
+        *,
+        universe: VariableUniverse | None = None,
+        n_elements: int | None = None,
+        var_names: Iterable[str] | None = None,
+    ) -> None:
+        self.universe = resolve_universe(
+            values,
+            universe=universe,
+            n_elements=n_elements,
+            var_names=var_names,
+        )
         self.values = CapacityMap(
             capacities=[
                 CoalitionValue(normalize_coalition(self.universe, coalition), value)

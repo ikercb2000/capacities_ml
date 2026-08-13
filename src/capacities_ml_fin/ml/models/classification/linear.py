@@ -6,16 +6,15 @@ import numpy as np
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.preprocessing import LabelEncoder
-from sklearn.utils.validation import check_array, check_is_fitted, column_or_1d
+from sklearn.utils.validation import check_is_fitted, column_or_1d, validate_data
 
 # modules
-from capacities_ml_fin.base.capacities import VariableUniverse
 from capacities_ml_fin.base.integrals.batch_integrals import batch_choquet_integral
 from capacities_ml_fin.ml.models.classification.utils import (
     linear_classifier,
     threshold_predictions,
 )
-from capacities_ml_fin.ml.models.utils import capacity_design, validate_features
+from capacities_ml_fin.ml.models.utils import capacity_design, fitted_universe
 from capacities_ml_fin.ml.optimization import (
     FullCapacity,
     Optimizer,
@@ -34,13 +33,11 @@ class ChoquetClassifier(ClassifierMixin, BaseEstimator):
 
     def __init__(
         self,
-        universe: VariableUniverse,
         sparsity: CapacitySparsity | None = None,
         solver: Solver = Solver.PYMOO,
         solver_options: dict[str, Any] | None = None,
         penalty: Any = None,
     ) -> None:
-        self.universe = universe
         self.sparsity = sparsity
         self.solver = solver
         self.solver_options = solver_options
@@ -49,9 +46,16 @@ class ChoquetClassifier(ClassifierMixin, BaseEstimator):
     def fit(self, X: ArrayLike, y: ArrayLike) -> "ChoquetClassifier":
         """Fit the capacity and the classification threshold."""
         # input and binary-label validation
-        matrix = check_array(X, dtype=float, ensure_2d=True, ensure_min_samples=1)
-        matrix = validate_features(matrix, self.universe, fitting=True)
-        raw_target = column_or_1d(y, warn=True)
+        matrix, raw_target = validate_data(
+            self,
+            X,
+            y,
+            dtype=float,
+            ensure_2d=True,
+            ensure_min_samples=1,
+        )
+        self.universe_ = fitted_universe(self)
+        raw_target = column_or_1d(raw_target, warn=True)
         if raw_target.shape != (matrix.shape[0],):
             raise ValueError("y must contain one label per observation.")
         label_encoder = LabelEncoder()
@@ -63,7 +67,7 @@ class ChoquetClassifier(ClassifierMixin, BaseEstimator):
 
         # capacity design and threshold initialization
         sparsity = self.sparsity if self.sparsity is not None else FullCapacity()
-        compilation = sparsity.compile(self.universe.n_elements)
+        compilation = sparsity.compile(self.universe_.n_elements)
         design = capacity_design(
             matrix,
             compilation.bundle.parameter_masks,
@@ -94,7 +98,7 @@ class ChoquetClassifier(ClassifierMixin, BaseEstimator):
             penalty=self.penalty,
         )
         problem = Problem.from_capacity(
-            universe=self.universe,
+            universe=self.universe_,
             objective=objective,
             sparsity=sparsity,
             parameter_layout=layout,
@@ -113,15 +117,13 @@ class ChoquetClassifier(ClassifierMixin, BaseEstimator):
         self.threshold_ = float(result.parameters[threshold_slice][0])
         self.classes_ = label_encoder.classes_
         self.n_classes_ = self.classes_.size
-        self.n_features_in_ = matrix.shape[1]
-        self.feature_names_in_ = np.asarray(self.universe.var_names, dtype=object)
         self.sparsity_ = sparsity
         return self
 
     def decision_function(self, X: ArrayLike) -> np.ndarray:
         """Return Choquet scores before thresholding."""
         check_is_fitted(self, ["capacity_", "threshold_"])
-        matrix = validate_features(X, self.universe)
+        matrix = validate_data(self, X, reset=False, dtype=float)
         return batch_choquet_integral(matrix, self.capacity_)
 
     def predict(self, X: ArrayLike) -> np.ndarray:
@@ -147,4 +149,4 @@ class ChoquetClassifier(ClassifierMixin, BaseEstimator):
             if features.shape != (self.n_features_in_,):
                 raise ValueError("input_features has an incompatible size.")
             return features
-        return self.feature_names_in_.copy()
+        return np.asarray(self.universe_.var_names, dtype=object)

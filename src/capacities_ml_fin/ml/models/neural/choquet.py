@@ -11,11 +11,10 @@ from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.class_weight import compute_sample_weight
-from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
+from sklearn.utils.validation import check_is_fitted, validate_data
 
 # modules
-from capacities_ml_fin.base.capacities import VariableUniverse
-from capacities_ml_fin.ml.models.utils import capacity_design
+from capacities_ml_fin.ml.models.utils import capacity_design, fitted_universe
 from capacities_ml_fin.ml.optimization import FullCapacity, Problem, Solver
 from capacities_ml_fin.ml.optimization.backends.to_scipy import ScipyOptimizer
 from capacities_ml_fin.ml.optimization.constraints import (
@@ -87,7 +86,7 @@ class _ChoquetNeuralMixin:
 
         # capacity parameterization shared by all hidden neurons
         sparsity = self.sparsity if self.sparsity is not None else FullCapacity()
-        compilation = sparsity.compile(self.universe.n_elements)
+        compilation = sparsity.compile(self.universe_.n_elements)
         bundle = compilation.bundle
         design = capacity_design(
             matrix,
@@ -248,7 +247,7 @@ class _ChoquetNeuralMixin:
             self.n_hidden, n_capacity
         )
         decoder = Problem.from_capacity(
-            universe=self.universe,
+            universe=self.universe_,
             objective=lambda parameters: 0.0,
             sparsity=self.sparsity if self.sparsity is not None else FullCapacity(),
         )
@@ -258,8 +257,6 @@ class _ChoquetNeuralMixin:
         self.result_ = result
         self.parameterization_ = compilation.bundle
         self.sparsity_ = self.sparsity if self.sparsity is not None else FullCapacity()
-        self.n_features_in_ = matrix.shape[1]
-        self.feature_names_in_ = np.asarray(self.universe.var_names, dtype=object)
         self.loss_ = float(result.objective_value)
         self.n_iter_ = result.n_iterations
         self._forward_training = forward
@@ -267,9 +264,7 @@ class _ChoquetNeuralMixin:
     # raw network output
     def _raw_predict(self, X: ArrayLike) -> np.ndarray:
         check_is_fitted(self, ["result_", "parameterization_"])
-        matrix = check_array(X, dtype=float, ensure_2d=True, ensure_min_samples=1)
-        if matrix.shape[1] != self.n_features_in_:
-            raise ValueError(f"X has {matrix.shape[1]} features; expected {self.n_features_in_}.")
+        matrix = validate_data(self, X, reset=False, dtype=float)
         design = capacity_design(
             matrix,
             self.parameterization_.parameter_masks,
@@ -289,7 +284,7 @@ class _ChoquetNeuralMixin:
             if features.shape != (self.n_features_in_,):
                 raise ValueError("input_features has an incompatible size.")
             return features
-        return self.feature_names_in_.copy()
+        return np.asarray(self.universe_.var_names, dtype=object)
 
 
 # Choquet neural regressor
@@ -298,7 +293,6 @@ class ChoquetNeuralRegressor(_ChoquetNeuralMixin, RegressorMixin, BaseEstimator)
 
     def __init__(
         self,
-        universe: VariableUniverse,
         n_hidden: int = 4,
         activation: str = "tanh",
         sparsity: CapacitySparsity | None = None,
@@ -309,7 +303,6 @@ class ChoquetNeuralRegressor(_ChoquetNeuralMixin, RegressorMixin, BaseEstimator)
         solver: Solver = Solver.SCIPY,
         solver_options: dict[str, Any] | None = None,
     ) -> None:
-        self.universe = universe
         self.n_hidden = n_hidden
         self.activation = activation
         self.sparsity = sparsity
@@ -327,9 +320,15 @@ class ChoquetNeuralRegressor(_ChoquetNeuralMixin, RegressorMixin, BaseEstimator)
         sample_weight: ArrayLike | None = None,
     ) -> "ChoquetNeuralRegressor":
         # regression target validation
-        matrix, target = check_X_y(X, y, dtype=float, ensure_2d=True, ensure_min_samples=1)
-        if matrix.shape[1] != self.universe.n_elements:
-            raise ValueError(f"X has {matrix.shape[1]} features; expected {self.universe.n_elements}.")
+        matrix, target = validate_data(
+            self,
+            X,
+            y,
+            dtype=float,
+            ensure_2d=True,
+            ensure_min_samples=1,
+        )
+        self.universe_ = fitted_universe(self)
         target = np.asarray(target, dtype=float)
         weights = _sample_weights(sample_weight, target.size)
         self._fit_core(matrix, target, weights, classification=False)
@@ -347,7 +346,6 @@ class ChoquetNeuralClassifier(_ChoquetNeuralMixin, ClassifierMixin, BaseEstimato
 
     def __init__(
         self,
-        universe: VariableUniverse,
         n_hidden: int = 4,
         activation: str = "tanh",
         sparsity: CapacitySparsity | None = None,
@@ -359,7 +357,6 @@ class ChoquetNeuralClassifier(_ChoquetNeuralMixin, ClassifierMixin, BaseEstimato
         solver_options: dict[str, Any] | None = None,
         class_weight: dict[Any, float] | str | None = None,
     ) -> None:
-        self.universe = universe
         self.n_hidden = n_hidden
         self.activation = activation
         self.sparsity = sparsity
@@ -378,9 +375,15 @@ class ChoquetNeuralClassifier(_ChoquetNeuralMixin, ClassifierMixin, BaseEstimato
         sample_weight: ArrayLike | None = None,
     ) -> "ChoquetNeuralClassifier":
         # input and binary-label validation
-        matrix, raw_target = check_X_y(X, y, dtype=float, ensure_2d=True, ensure_min_samples=1)
-        if matrix.shape[1] != self.universe.n_elements:
-            raise ValueError(f"X has {matrix.shape[1]} features; expected {self.universe.n_elements}.")
+        matrix, raw_target = validate_data(
+            self,
+            X,
+            y,
+            dtype=float,
+            ensure_2d=True,
+            ensure_min_samples=1,
+        )
+        self.universe_ = fitted_universe(self)
         encoder = LabelEncoder()
         target = encoder.fit_transform(raw_target)
         if encoder.classes_.size != 2:

@@ -10,6 +10,8 @@ def test_choquet_autoregressor_recovers_stable_ar_one_and_pmdarima_api():
         series.append(0.1 + 0.6 * series[-1])
 
     model = ChoquetAutoRegressor(lags=1).fit(series)
+
+    assert model.universe_.var_names == ("lag_1",)
     forecast, confidence = model.predict(3, return_conf_int=True)
 
     assert np.isclose(model.phi_, 0.6, atol=1e-4)

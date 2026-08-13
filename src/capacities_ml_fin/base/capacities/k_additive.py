@@ -1,21 +1,34 @@
 # imports
-from collections.abc import Mapping
-from dataclasses import dataclass
+from collections.abc import Iterable, Mapping
 from itertools import combinations
 
 # modules
-from capacities_ml_fin.base.capacities.capacities import ExplicitCapacity, VariableUniverse
+from capacities_ml_fin.base.capacities.capacities import (
+    ExplicitCapacity,
+    VariableUniverse,
+    resolve_universe,
+)
 from capacities_ml_fin.base.capacities.utils import CoalitionInput, normalize_coalition
 from capacities_ml_fin.base.capacities.validation import check_k_additivity
 
 # k-Additive capacity dataclass
-@dataclass
 class KAdditiveCapacity(ExplicitCapacity):
-    k: int
-
-    def __post_init__(self, values: Mapping[CoalitionInput, float]) -> None:
-        if not isinstance(self.universe, VariableUniverse):
-            raise TypeError("universe must be a VariableUniverse instance.")
+    def __init__(
+        self,
+        values: Mapping[CoalitionInput, float],
+        k: int,
+        *,
+        universe: VariableUniverse | None = None,
+        n_elements: int | None = None,
+        var_names: Iterable[str] | None = None,
+    ) -> None:
+        self.universe = resolve_universe(
+            values,
+            universe=universe,
+            n_elements=n_elements,
+            var_names=var_names,
+        )
+        self.k = k
         if not isinstance(self.k, int):
             raise TypeError("k must be an integer.")
         if not 1 <= self.k <= self.universe.n_elements:
@@ -32,7 +45,7 @@ class KAdditiveCapacity(ExplicitCapacity):
             normalized_values[normalized] = float(value)
 
         completed_values = self._complete_k_additive_values(normalized_values)
-        super().__post_init__(completed_values)
+        super().__init__(completed_values, universe=self.universe)
 
     def _complete_k_additive_values(self, values: dict[frozenset[int], float]) -> dict[frozenset[int], float]:
         variables = tuple(range(self.universe.n_elements))

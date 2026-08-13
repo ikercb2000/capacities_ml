@@ -5,13 +5,12 @@ from typing import Any
 import numpy as np
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator, RegressorMixin
-from sklearn.utils.validation import check_X_y, check_is_fitted
+from sklearn.utils.validation import check_is_fitted, validate_data
 
 # modules
-from capacities_ml_fin.base.capacities import VariableUniverse
 from capacities_ml_fin.base.integrals.batch_integrals import batch_choquet_integral
 from capacities_ml_fin.ml.models.regression.utils import regression_predictor
-from capacities_ml_fin.ml.models.utils import capacity_design, validate_features
+from capacities_ml_fin.ml.models.utils import capacity_design, fitted_universe
 from capacities_ml_fin.ml.optimization import (
     FullCapacity,
     Optimizer,
@@ -30,13 +29,11 @@ class ChoquetRegressor(RegressorMixin, BaseEstimator):
 
     def __init__(
         self,
-        universe: VariableUniverse,
         sparsity: CapacitySparsity | None = None,
         solver: Solver = Solver.SCIPY,
         solver_options: dict[str, Any] | None = None,
         penalty: Any = None,
     ) -> None:
-        self.universe = universe
         self.sparsity = sparsity
         self.solver = solver
         self.solver_options = solver_options
@@ -44,14 +41,15 @@ class ChoquetRegressor(RegressorMixin, BaseEstimator):
 
     def fit(self, X: ArrayLike, y: ArrayLike) -> "ChoquetRegressor":
         """Fit the capacity and the regression intercept."""
-        matrix, target = check_X_y(
+        matrix, target = validate_data(
+            self,
             X,
             y,
             dtype=float,
             ensure_2d=True,
             ensure_min_samples=1,
         )
-        matrix = validate_features(matrix, self.universe, fitting=True)
+        self.universe_ = fitted_universe(self)
         target = np.asarray(target, dtype=float).reshape(-1)
         if not np.all(np.isfinite(target)):
             raise ValueError("y must contain only finite values.")
@@ -59,7 +57,7 @@ class ChoquetRegressor(RegressorMixin, BaseEstimator):
             raise TypeError("solver must be a Solver enum member.")
 
         sparsity = self.sparsity if self.sparsity is not None else FullCapacity()
-        compilation = sparsity.compile(self.universe.n_elements)
+        compilation = sparsity.compile(self.universe_.n_elements)
         design = capacity_design(
             matrix,
             compilation.bundle.parameter_masks,
@@ -88,7 +86,7 @@ class ChoquetRegressor(RegressorMixin, BaseEstimator):
             symbolic_predictor=predictor,
         )
         problem = Problem.from_capacity(
-            universe=self.universe,
+            universe=self.universe_,
             objective=objective,
             sparsity=sparsity,
             parameter_layout=layout,
@@ -104,15 +102,13 @@ class ChoquetRegressor(RegressorMixin, BaseEstimator):
         self.result_ = result
         self.capacity_ = problem.decode_result(result)
         self.intercept_ = float(result.parameters[intercept_slice][0])
-        self.n_features_in_ = matrix.shape[1]
-        self.feature_names_in_ = np.asarray(self.universe.var_names, dtype=object)
         self.sparsity_ = sparsity
         return self
 
     def predict(self, X: ArrayLike) -> np.ndarray:
         """Predict continuous responses."""
         check_is_fitted(self, ["capacity_", "intercept_"])
-        matrix = validate_features(X, self.universe)
+        matrix = validate_data(self, X, reset=False, dtype=float)
         return batch_choquet_integral(matrix, self.capacity_) + self.intercept_
 
     def fit_predict(self, X: ArrayLike, y: ArrayLike) -> np.ndarray:
@@ -127,4 +123,4 @@ class ChoquetRegressor(RegressorMixin, BaseEstimator):
             if features.shape != (self.n_features_in_,):
                 raise ValueError("input_features has an incompatible size.")
             return features
-        return self.feature_names_in_.copy()
+        return np.asarray(self.universe_.var_names, dtype=object)

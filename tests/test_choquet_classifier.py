@@ -1,6 +1,5 @@
 import numpy as np
 
-from capacities_ml_fin.base.capacities import VariableUniverse
 from capacities_ml_fin.ml.models import ChoquetClassifier
 from capacities_ml_fin.ml.optimization import L1Penalty, Solver
 
@@ -18,7 +17,6 @@ def test_choquet_classifier_optimizes_capacity_and_threshold():
 
     penalty = L1Penalty(weight=0.001, selection=[0])
     model = ChoquetClassifier(
-        universe=VariableUniverse(("x0", "x1")),
         solver=Solver.PYMOO,
         penalty=penalty,
         solver_options={
@@ -32,6 +30,7 @@ def test_choquet_classifier_optimizes_capacity_and_threshold():
     assert 0.0 <= model.threshold_ <= 1.0
     assert model.problem_.parameter_layout.slice("threshold") == slice(4, 5)
     assert model.problem_.objective.penalty is penalty
+    assert model.universe_.var_names == ("x0", "x1")
 
 
 def test_choquet_classifier_accepts_arbitrary_binary_labels():
@@ -46,7 +45,6 @@ def test_choquet_classifier_accepts_arbitrary_binary_labels():
     y = np.array(["negative", "negative", "positive", "positive"])
 
     model = ChoquetClassifier(
-        universe=VariableUniverse(("x0", "x1")),
         solver=Solver.PYMOO,
         solver_options={"population_size": 20, "n_generations": 10, "seed": 5},
     ).fit(X, y)
@@ -67,7 +65,6 @@ def test_choquet_classifier_is_serializable(estimator_roundtrip):
     )
     y = np.array(["negative", "negative", "positive", "positive"])
     model = ChoquetClassifier(
-        universe=VariableUniverse(("x0", "x1")),
         solver=Solver.PYMOO,
         solver_options={
             "population_size": 20,

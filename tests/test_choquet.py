@@ -14,7 +14,6 @@ from capacities_ml_fin.base.integrals.choquet import mobius_choquet, ordered_cho
 
 def build_capacity() -> ExplicitCapacity:
     return ExplicitCapacity(
-        universe=VariableUniverse(("x0", "x1")),
         values={
             ("x0",): 0.2,
             ("x1",): 0.5,
@@ -106,7 +105,6 @@ def test_inverse_mobius_transform_expands_a_sparse_representation():
 
 def test_mobius_capacity_supports_names_and_sparse_coefficients():
     mobius_capacity = MobiusCapacity(
-        universe=VariableUniverse(("price", "quality")),
         coefficients={
             "price": 0.2,
             ("price", "quality"): 0.8,
@@ -120,6 +118,15 @@ def test_mobius_capacity_supports_names_and_sparse_coefficients():
         ("price",): 0.2,
         ("price", "quality"): 0.8,
     }
+
+
+def test_mobius_capacity_infers_minimum_integer_universe():
+    capacity = MobiusCapacity(
+        coefficients={(0,): 0.2, (2,): 0.8},
+    )
+
+    assert capacity.n_elements == 3
+    assert capacity.var_names == ("x0", "x1", "x2")
 
 
 def test_mobius_capacity_accepts_valid_negative_interaction():

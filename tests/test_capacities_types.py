@@ -1,7 +1,12 @@
 import pytest
 
 # modules
-from capacities_ml_fin.base.capacities import ExplicitCapacity, KAdditiveCapacity, VariableUniverse
+from capacities_ml_fin.base.capacities import (
+    ExplicitCapacity,
+    KAdditiveCapacity,
+    MobiusCapacity,
+    VariableUniverse,
+)
 from capacities_ml_fin.base.capacities import mobius_transform
 from capacities_ml_fin.base.capacities.types import CapacityMap, CoalitionValue, MobiusMap
 
@@ -98,6 +103,16 @@ def test_variable_universe_rejects_duplicate_names():
         VariableUniverse(("x0", "x0"))
 
 
+def test_variable_universe_can_be_inferred_from_size_and_coalitions():
+    by_size = VariableUniverse.from_size(3)
+    by_names = VariableUniverse.from_coalitions(
+        [("quality",), ("quality", "price")]
+    )
+
+    assert by_size.var_names == ("x0", "x1", "x2")
+    assert by_names.var_names == ("quality", "price")
+
+
 def test_variable_universe_allows_mutation():
     universe = VariableUniverse(("price", "quality", "risk"))
 
@@ -111,9 +126,7 @@ def test_variable_universe_allows_mutation():
 
 
 def test_capacity_supports_user_friendly_access():
-    universe = VariableUniverse(("price", "quality"))
     capacity = ExplicitCapacity(
-        universe=universe,
         values={
             ("price",): 0.2,
             ("quality",): 0.5,
@@ -132,9 +145,50 @@ def test_capacity_supports_user_friendly_access():
     }
 
 
+def test_explicit_capacity_infers_named_universe_from_values():
+    capacity = ExplicitCapacity(
+        values={
+            ("quality",): 0.3,
+            ("price",): 0.4,
+            ("quality", "price"): 1.0,
+        }
+    )
+
+    assert capacity.var_names == ("quality", "price")
+    assert capacity.n_elements == 2
+
+
+def test_mobius_capacity_can_include_omitted_null_elements_by_size():
+    capacity = MobiusCapacity(
+        coefficients={(0,): 1.0},
+        n_elements=3,
+    )
+
+    assert capacity.var_names == ("x0", "x1", "x2")
+    assert capacity.n_elements == 3
+    assert capacity.event_value([True, False, False]) == 1.0
+    assert capacity.event_value([False, True, True]) == 0.0
+
+
+def test_capacity_accepts_names_without_a_variable_universe_object():
+    capacity = MobiusCapacity(
+        coefficients={"quality": 0.4, "price": 0.6},
+        var_names=("quality", "price", "unused"),
+    )
+
+    assert capacity.var_names == ("quality", "price", "unused")
+    assert capacity.event_value([False, False, True]) == 0.0
+
+
+def test_capacity_rejects_ambiguous_mixed_universe_inference():
+    with pytest.raises(ValueError, match="mixed names and indices"):
+        MobiusCapacity(
+            coefficients={"quality": 0.5, 1: 0.5},
+        )
+
+
 def test_k_additive_capacity_derives_coalitions_above_k():
     capacity = KAdditiveCapacity(
-        universe=VariableUniverse(("x0", "x1", "x2")),
         values={
             "x0": 0.2,
             "x1": 0.3,

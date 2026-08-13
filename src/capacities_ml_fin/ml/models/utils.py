@@ -2,8 +2,6 @@
 from __future__ import annotations
 from typing import Any
 import numpy as np
-from numpy.typing import ArrayLike
-from sklearn.utils.validation import check_array
 
 # modules
 from capacities_ml_fin.base.capacities import VariableUniverse
@@ -14,22 +12,14 @@ from capacities_ml_fin.base.integrals.batch_integrals import (
 from capacities_ml_fin.ml.optimization.enums import CapacityRepresentation
 
 
-# feature validation
-def validate_features(
-    X: ArrayLike,
-    universe: VariableUniverse,
-    *,
-    fitting: bool = False,
-) -> np.ndarray:
-    """Validate feature matrices using scikit-learn conventions."""
-    matrix = check_array(X, dtype=float, ensure_2d=True, ensure_min_samples=1)
-    if matrix.shape[1] != universe.n_elements:
-        raise ValueError(
-            f"X has {matrix.shape[1]} features; expected {universe.n_elements}."
-        )
-    if fitting and not np.all(np.isfinite(matrix)):
-        raise ValueError("X must contain only finite values.")
-    return matrix
+# fitted universe
+def fitted_universe(estimator: Any) -> VariableUniverse:
+    """Build a variable universe from validated estimator input metadata."""
+    if hasattr(estimator, "feature_names_in_"):
+        names = tuple(str(name) for name in estimator.feature_names_in_)
+    else:
+        return VariableUniverse.from_size(estimator.n_features_in_)
+    return VariableUniverse(names)
 
 
 # capacity design matrix

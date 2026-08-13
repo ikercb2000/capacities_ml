@@ -1,9 +1,9 @@
 import numpy as np
+import pandas as pd
 import pytest
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 
-from capacities_ml_fin.base.capacities import VariableUniverse
 from capacities_ml_fin.ml.models import ChoquetRegressor
 from capacities_ml_fin.ml.optimization import KAdditivity, L2Penalty, Solver
 from capacities_ml_fin.ml.preprocessing import CapacityNormalizer
@@ -22,7 +22,6 @@ def test_choquet_regressor_fits_capacity_and_intercept_with_cvxpy():
 
     penalty = L2Penalty(weight=0.0, selection=[0])
     model = ChoquetRegressor(
-        universe=VariableUniverse(("x0", "x1")),
         solver=Solver.CVXPY,
         penalty=penalty,
     ).fit(X, y)
@@ -47,7 +46,6 @@ def test_choquet_regressor_is_serializable(
     )
     y = np.array([0.5, 1.0, 1.0, 1.5])
     model = ChoquetRegressor(
-        universe=VariableUniverse(("x0", "x1")),
         solver=solver,
     ).fit(X, y)
 
@@ -79,7 +77,6 @@ def test_fitted_sklearn_search_with_choquet_regressor_is_serializable(
             (
                 "model",
                 ChoquetRegressor(
-                    universe=VariableUniverse(("x0", "x1")),
                 ),
             ),
         ]
@@ -95,3 +92,50 @@ def test_fitted_sklearn_search_with_choquet_regressor_is_serializable(
 
     np.testing.assert_allclose(restored.predict(X), search.predict(X))
     assert restored.best_params_ == search.best_params_
+
+
+def test_choquet_regressor_infers_and_checks_dataframe_universe():
+    X = pd.DataFrame(
+        {
+            "liquidity": [0.0, 0.0, 1.0, 1.0],
+            "profitability": [0.0, 1.0, 0.0, 1.0],
+        }
+    )
+    y = np.array([0.0, 0.5, 0.5, 1.0])
+    model = ChoquetRegressor().fit(X, y)
+
+    assert model.universe_.var_names == ("liquidity", "profitability")
+    assert model.capacity_.var_names == model.universe_.var_names
+
+    with pytest.raises(ValueError, match="feature names"):
+        model.predict(X[["profitability", "liquidity"]])
+
+
+def test_choquet_regressor_generates_names_for_array_features():
+    X = np.array([[0.0, 0.0], [0.0, 1.0], [1.0, 0.0], [1.0, 1.0]])
+    y = np.array([0.0, 0.5, 0.5, 1.0])
+    model = ChoquetRegressor().fit(X, y)
+
+    assert not hasattr(model, "feature_names_in_")
+    assert model.universe_.var_names == ("x0", "x1")
+    np.testing.assert_array_equal(model.get_feature_names_out(), ["x0", "x1"])
+
+
+def test_pipeline_can_preserve_names_for_automatic_universe_inference():
+    X = pd.DataFrame(
+        {
+            "liquidity": [0.0, 0.0, 1.0, 1.0],
+            "profitability": [0.0, 1.0, 0.0, 1.0],
+        }
+    )
+    y = np.array([0.0, 0.5, 0.5, 1.0])
+    pipeline = Pipeline(
+        [
+            ("normalize", CapacityNormalizer()),
+            ("model", ChoquetRegressor()),
+        ]
+    ).set_output(transform="pandas")
+
+    pipeline.fit(X, y)
+
+    assert pipeline.named_steps["model"].universe_.var_names == tuple(X.columns)

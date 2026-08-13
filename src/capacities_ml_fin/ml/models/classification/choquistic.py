@@ -8,17 +8,16 @@ from scipy.special import expit
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.class_weight import compute_sample_weight
-from sklearn.utils.validation import check_X_y, check_is_fitted
+from sklearn.utils.validation import check_is_fitted, validate_data
 
 # modules
-from capacities_ml_fin.base.capacities import VariableUniverse
 from capacities_ml_fin.base.integrals.batch_integrals import batch_choquet_integral
 from capacities_ml_fin.ml.models.classification.utils import (
     apply_choquistic_link,
     choquistic_logits,
     validate_unit_interval,
 )
-from capacities_ml_fin.ml.models.utils import capacity_design, validate_features
+from capacities_ml_fin.ml.models.utils import capacity_design, fitted_universe
 from capacities_ml_fin.ml.optimization import (
     KAdditivity,
     Optimizer,
@@ -43,14 +42,12 @@ class ChoquisticRegression(ClassifierMixin, BaseEstimator):
 
     def __init__(
         self,
-        universe: VariableUniverse,
         sparsity: CapacitySparsity | None = None,
         solver: Solver = Solver.SCIPY,
         solver_options: dict[str, Any] | None = None,
         class_weight: dict[Any, float] | str | None = None,
         penalty: Any = None,
     ) -> None:
-        self.universe = universe
         self.sparsity = sparsity
         self.solver = solver
         self.solver_options = solver_options
@@ -65,16 +62,16 @@ class ChoquisticRegression(ClassifierMixin, BaseEstimator):
     ) -> "ChoquisticRegression":
         """Fit the capacity, utility threshold and scale by maximum likelihood."""
         # input and binary-label validation
-        matrix, raw_target = check_X_y(
+        matrix, raw_target = validate_data(
+            self,
             X,
             y,
             dtype=float,
             ensure_2d=True,
             ensure_min_samples=1,
         )
-        matrix = validate_unit_interval(
-            validate_features(matrix, self.universe, fitting=True)
-        )
+        self.universe_ = fitted_universe(self)
+        matrix = validate_unit_interval(matrix)
         encoder = LabelEncoder()
         target = encoder.fit_transform(raw_target)
         if encoder.classes_.size != 2:
@@ -103,9 +100,9 @@ class ChoquisticRegression(ClassifierMixin, BaseEstimator):
         sparsity = (
             self.sparsity
             if self.sparsity is not None
-            else KAdditivity(order=self.universe.n_elements)
+            else KAdditivity(order=self.universe_.n_elements)
         )
-        compilation = sparsity.compile(self.universe.n_elements)
+        compilation = sparsity.compile(self.universe_.n_elements)
         design = capacity_design(
             matrix,
             compilation.bundle.parameter_masks,
@@ -150,7 +147,7 @@ class ChoquisticRegression(ClassifierMixin, BaseEstimator):
             penalty=self.penalty,
         )
         problem = Problem.from_capacity(
-            universe=self.universe,
+            universe=self.universe_,
             objective=objective,
             sparsity=sparsity,
             parameter_layout=layout,
@@ -171,8 +168,6 @@ class ChoquisticRegression(ClassifierMixin, BaseEstimator):
         self.gamma_ = float(result.parameters[gamma_slice][0])
         self.beta_ = float(result.parameters[beta_slice][0])
         self.classes_ = encoder.classes_
-        self.n_features_in_ = matrix.shape[1]
-        self.feature_names_in_ = np.asarray(self.universe.var_names, dtype=object)
         self.sparsity_ = sparsity
         return self
 
@@ -180,7 +175,9 @@ class ChoquisticRegression(ClassifierMixin, BaseEstimator):
     def utility_function(self, X: ArrayLike) -> np.ndarray:
         """Return the latent utility ``C_mu(X)`` from the paper's first stage."""
         check_is_fitted(self, ["capacity_", "gamma_", "beta_"])
-        matrix = validate_unit_interval(validate_features(X, self.universe))
+        matrix = validate_unit_interval(
+            validate_data(self, X, reset=False, dtype=float)
+        )
         return batch_choquet_integral(matrix, self.capacity_)
 
     # logistic decision score
@@ -220,4 +217,4 @@ class ChoquisticRegression(ClassifierMixin, BaseEstimator):
             if features.shape != (self.n_features_in_,):
                 raise ValueError("input_features has an incompatible size.")
             return features
-        return self.feature_names_in_.copy()
+        return np.asarray(self.universe_.var_names, dtype=object)
