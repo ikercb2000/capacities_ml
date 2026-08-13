@@ -4,6 +4,7 @@ import pytest
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 
+from capacities_ml_fin.base.capacities import validate_capacity
 from capacities_ml_fin.ml.models import ChoquetRegressor
 from capacities_ml_fin.ml.optimization import KAdditivity, L2Penalty, Solver
 from capacities_ml_fin.ml.preprocessing import CapacityNormalizer
@@ -29,6 +30,7 @@ def test_choquet_regressor_fits_capacity_and_intercept_with_cvxpy():
     np.testing.assert_allclose(model.predict(X), y, atol=1e-5)
     assert model.problem_.parameter_layout.slice("intercept") == slice(4, 5)
     assert model.problem_.objective.penalty is penalty
+    validate_capacity(model.capacity_)
 
 
 @pytest.mark.parametrize("solver", (Solver.SCIPY, Solver.CVXPY))
@@ -139,3 +141,17 @@ def test_pipeline_can_preserve_names_for_automatic_universe_inference():
     pipeline.fit(X, y)
 
     assert pipeline.named_steps["model"].universe_.var_names == tuple(X.columns)
+
+
+def test_choquet_regressor_uses_sklearn_input_validation():
+    X = np.array([[0.0, 0.0], [0.5, 0.5], [1.0, 1.0]])
+    y = np.array([0.0, 0.5, 1.0])
+    model = ChoquetRegressor().fit(X, y)
+
+    with pytest.raises(ValueError, match="features"):
+        model.predict(np.ones((2, 3)))
+
+    invalid_X = X.copy()
+    invalid_X[0, 0] = np.nan
+    with pytest.raises(ValueError, match="NaN"):
+        ChoquetRegressor().fit(invalid_X, y)
