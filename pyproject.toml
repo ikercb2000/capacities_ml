@@ -37,9 +37,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ikercb2000/capacities_ml"
-Repository = "https://github.com/ikercb2000/capacities_ml"
-Issues = "https://github.com/ikercb2000/capacities_ml/issues"
+Homepage = "https://github.com/ikercb2000/capacities_ml_fin"
+Repository = "https://github.com/ikercb2000/capacities_ml_fin"
+Issues = "https://github.com/ikercb2000/capacities_ml_fin/issues"
 
 [tool.poetry]
 packages = [{include = "capacities_ml_fin", from = "src"}]
@@ -56,6 +56,10 @@ dev = [
     "commitizen (>=4.17.0,<5.0.0)",
     "ipykernel (>=7.3.0,<8.0.0)",
     "twine (>=6.2.0,<7.0.0)",
+]
+docs = [
+    "mkdocs-material (>=9.7.7,<10.0.0)",
+    "mkdocstrings-python (>=2.0.5,<3.0.0)"
 ]
 
 [build-system]
