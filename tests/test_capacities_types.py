@@ -1,7 +1,7 @@
 import pytest
 
 # modules
-from capacities_ml.capacities import Capacity, KAdditiveCapacity, VariableUniverse
+from capacities_ml.capacities import ExplicitCapacity, KAdditiveCapacity, VariableUniverse
 from capacities_ml.capacities.types import CapacityMap, CoalitionValue
 from capacities_ml.mobius.types import MobiusMap
 from capacities_ml.mobius import mobius_transform
@@ -47,7 +47,7 @@ def test_get_coalition_returns_all_matching_coalitions():
 
 def test_capacity_validates_automatically_on_construction():
     with pytest.raises(ValueError, match="Breach in monotonicity"):
-        Capacity(
+        ExplicitCapacity(
             universe=VariableUniverse(("x0", "x1")),
             values={
                 ("x0",): 0.8,
@@ -58,7 +58,7 @@ def test_capacity_validates_automatically_on_construction():
 
 
 def test_capacity_and_its_internal_map_are_mutable():
-    capacity = Capacity(
+    capacity = ExplicitCapacity(
         universe=VariableUniverse(("x0", "x1")),
         values={
             ("x0",): 0.2,
@@ -113,7 +113,7 @@ def test_variable_universe_allows_mutation():
 
 def test_capacity_supports_user_friendly_access():
     universe = VariableUniverse(("price", "quality"))
-    capacity = Capacity(
+    capacity = ExplicitCapacity(
         universe=universe,
         values={
             ("price",): 0.2,

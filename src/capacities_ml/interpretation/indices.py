@@ -25,13 +25,9 @@ def _as_mobius(capacity: CapacityLike) -> MobiusRepresentation:
 
 # mobius terms
 def _mobius_terms(mobius: MobiusRepresentation):
-    for mask in range(1, 1 << mobius.n_elements):
-        coalition = frozenset(
-            feature
-            for feature in range(mobius.n_elements)
-            if mask & (1 << feature)
-        )
-        yield coalition, mobius.value(coalition)
+    for coefficient in mobius._coefficient_map:
+        if coefficient.coalition:
+            yield coefficient.coalition, coefficient.value
 
 
 # feature index

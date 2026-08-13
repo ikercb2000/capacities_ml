@@ -2,7 +2,7 @@ import numpy as np
 
 from capacities_ml.capacities import (
     BaseCapacity,
-    Capacity,
+    ExplicitCapacity,
     VariableUniverse,
 )
 from capacities_ml.mobius import (
@@ -13,8 +13,8 @@ from capacities_ml.mobius import (
 from capacities_ml.integrals.choquet import mobius_choquet, ordered_choquet
 
 
-def build_capacity() -> Capacity:
-    return Capacity(
+def build_capacity() -> ExplicitCapacity:
+    return ExplicitCapacity(
         universe=VariableUniverse(("x0", "x1")),
         values={
             ("x0",): 0.2,
@@ -51,6 +51,28 @@ def test_mobius_choquet_matches_ordered_choquet():
     mobius_value = mobius_choquet(mobius_rep, x)
 
     assert np.isclose(mobius_value, ordered_value)
+    assert np.isclose(ordered_choquet(mobius_rep, x), ordered_value)
+
+
+def test_mobius_representation_implements_common_event_interface():
+    mobius_rep = MobiusRepresentation(
+        universe=VariableUniverse(("x0", "x1", "x2")),
+        coefficients={
+            ("x0",): 0.2,
+            ("x1",): 0.3,
+            ("x2",): 0.1,
+            ("x0", "x1"): 0.1,
+            ("x0", "x2"): 0.1,
+            ("x1", "x2"): 0.2,
+        },
+    )
+
+    assert isinstance(mobius_rep, BaseCapacity)
+    assert mobius_rep.event_value([True, False, True]) == 0.4
+    np.testing.assert_allclose(
+        mobius_rep.nested_event_values([2, 0, 1]),
+        [1.0, 0.6, 0.3],
+    )
 
 
 def test_mobius_transform_recovers_expected_singletons():

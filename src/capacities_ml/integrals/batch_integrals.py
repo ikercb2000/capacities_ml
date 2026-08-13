@@ -55,6 +55,8 @@ def batch_choquet_integral(X: np.ndarray, capacity: BaseCapacity) -> np.ndarray:
     if isinstance(capacity, ExplicitCapacity):
         values_by_mask = capacity_values_by_mask(capacity)
         return capacity_design_matrix(matrix) @ values_by_mask
+    if isinstance(capacity, MobiusRepresentation):
+        return batch_choquet_integral_mobius(matrix, capacity)
     return np.asarray([ordered_choquet(capacity, row) for row in matrix])
 
 # mobius design matrix

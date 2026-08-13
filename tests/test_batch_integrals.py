@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from capacities_ml.capacities.capacities import Capacity, VariableUniverse
+from capacities_ml.capacities.capacities import ExplicitCapacity, VariableUniverse
 from capacities_ml.mobius import mobius_transform
 from capacities_ml.integrals.batch_integrals import (
     batch_choquet_integral,
@@ -13,8 +13,8 @@ from capacities_ml.integrals.utils import coalition_indices
 from capacities_ml.risk import ProbabilityCapacity
 
 
-def build_capacity() -> Capacity:
-    return Capacity(
+def build_capacity() -> ExplicitCapacity:
+    return ExplicitCapacity(
         universe=VariableUniverse(("x0", "x1", "x2")),
         values={
             ("x0",): 0.2,
@@ -109,3 +109,4 @@ def test_batch_choquet_integral_mobius_matches_rowwise_mobius_choquet():
     )
 
     assert np.allclose(batch_values, rowwise_values)
+    assert np.allclose(batch_choquet_integral(X, mobius_rep), rowwise_values)
