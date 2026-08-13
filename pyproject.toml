@@ -44,11 +44,14 @@ Issues = "https://github.com/ikercb2000/capacities_ml/issues"
 packages = [{include = "capacities_ml_fin", from = "src"}]
 
 [dependency-groups]
-dev = [
-    "matplotlib (>=3.11.1,<4.0.0)",
-    "seaborn (>=0.13.2,<0.14.0)",
+test = [
     "polars (>=1.43.1,<2.0.0)",
     "pytest (>=9.1.1,<10.0.0)",
+]
+dev = [
+    {include-group = "test"},
+    "matplotlib (>=3.11.1,<4.0.0)",
+    "seaborn (>=0.13.2,<0.14.0)",
     "commitizen (>=4.17.0,<5.0.0)",
     "ipykernel (>=7.3.0,<8.0.0)",
     "twine (>=6.2.0,<7.0.0)",
