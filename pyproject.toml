@@ -1,5 +1,5 @@
 [project]
-name = "capacities_ml_fin"
+name = "capacities-ml-fin"
 version = "0.1.0"
 description = "Capacities, Choquet machine learning, and non-additive financial risk measures."
 authors = [
@@ -7,7 +7,23 @@ authors = [
 ]
 readme = "README.md"
 license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.12,<4.0"
+keywords = [
+    "capacities",
+    "choquet-integral",
+    "machine-learning",
+    "risk-measures",
+    "financial-risk",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+]
 dependencies = [
     "numpy (>=2.5.1,<3.0.0)",
     "pandas (>=3.0.5,<4.0.0)",
@@ -16,6 +32,11 @@ dependencies = [
     "scikit-learn (>=1.9.0,<2.0.0)",
     "pymoo (>=0.6.2,<0.7.0)",
 ]
+
+[project.urls]
+Homepage = "https://github.com/ikercb2000/capacities_ml"
+Repository = "https://github.com/ikercb2000/capacities_ml"
+Issues = "https://github.com/ikercb2000/capacities_ml/issues"
 
 [tool.poetry]
 packages = [{include = "capacities_ml_fin", from = "src"}]
@@ -28,6 +49,7 @@ dev = [
     "pytest (>=9.1.1,<10.0.0)",
     "commitizen (>=4.17.0,<5.0.0)",
     "ipykernel (>=7.3.0,<8.0.0)",
+    "twine (>=6.2.0,<7.0.0)",
 ]
 
 [build-system]
