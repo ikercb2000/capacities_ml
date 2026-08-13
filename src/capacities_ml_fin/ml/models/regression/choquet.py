@@ -29,7 +29,45 @@ from capacities_ml_fin.ml.optimization.sparsity import CapacitySparsity
 
 # choquet regressor
 class ChoquetRegressor(RegressorMixin, BaseEstimator):
-    """Scikit-learn compatible least-squares Choquet regressor."""
+    """Least-squares regression with a learned Choquet integral.
+
+    The estimator learns a normalized monotone capacity together with an
+    unconstrained intercept. It follows the scikit-learn estimator contract and
+    can be used in pipelines, cross-validation, grid search, pickle, and joblib.
+
+    Parameters
+    ----------
+    sparsity : CapacitySparsity, optional
+        Capacity parameterization. ``None`` fits a full explicit capacity.
+    solver : {"scipy", "cvxpy", "pymoo"} or Solver, default="scipy"
+        Optimization backend.
+    solver_options : dict, optional
+        Keyword arguments forwarded to the selected backend.
+    penalty : callable or penalty object, optional
+        Regularization term added to the squared-error objective.
+
+    Attributes
+    ----------
+    capacity_ : BaseCapacity
+        Fitted immutable capacity.
+    intercept_ : float
+        Fitted additive intercept.
+    universe_ : VariableUniverse
+        Feature universe inferred from ``X``.
+    problem_ : Problem
+        Solver-independent optimization problem used during fitting.
+    result_ : OptimizationResult
+        Numerical optimizer result and diagnostics.
+    n_features_in_ : int
+        Number of input features seen during :meth:`fit`.
+    feature_names_in_ : ndarray of str
+        Input feature names when ``X`` provides string column names.
+
+    Notes
+    -----
+    Inputs should be made commensurable before fitting, typically with
+    :class:`~capacities_ml_fin.ml.preprocessing.CapacityNormalizer`.
+    """
 
     def __init__(
         self,

@@ -35,12 +35,47 @@ from capacities_ml_fin.ml.optimization.sparsity import CapacitySparsity
 
 # Choquet linear classifier
 class ChoquetClassifier(ClassifierMixin, BaseEstimator):
-    """Deterministic threshold classifier with monotone Choquet projection.
+    """Binary threshold classifier based on a learned Choquet score.
 
-    When ``learn_feature_scales=True``, non-negative feature scales are fitted
-    jointly with the capacity and normalized so their maximum equals one.
-    Inputs must be commensurable criteria in ``[0, 1]`` whose direction has
-    already been oriented so that larger values favor the positive class.
+    The decision rule compares ``C_mu(b * x)`` with a learned threshold. When
+    feature scaling is enabled, non-negative scales ``b`` are fitted jointly
+    with the capacity and normalized to have maximum one. Inputs must lie in
+    ``[0, 1]`` and larger values must favor the positive class.
+
+    Parameters
+    ----------
+    sparsity : CapacitySparsity, optional
+        Capacity parameterization. ``None`` fits a full explicit capacity.
+    solver : {"scipy", "cvxpy", "pymoo"} or Solver, default="pymoo"
+        Optimization backend. PYMOO is suitable for the discontinuous zero-one
+        training loss.
+    solver_options : dict, optional
+        Keyword arguments forwarded to the selected backend.
+    penalty : callable or penalty object, optional
+        Regularization term added to the classification objective.
+    learn_feature_scales : bool, default=True
+        Whether to jointly learn normalized criterion scales.
+
+    Attributes
+    ----------
+    classes_ : ndarray of shape (2,)
+        Original binary class labels.
+    capacity_ : BaseCapacity
+        Fitted immutable capacity.
+    threshold_ : float
+        Learned decision threshold in ``[0, 1]``.
+    feature_scales_ : ndarray of shape (n_features,)
+        Learned scales, or ones when scale learning is disabled.
+    result_ : OptimizationResult
+        Numerical optimizer result and diagnostics.
+    n_features_in_ : int
+        Number of input features seen during :meth:`fit`.
+
+    Notes
+    -----
+    The model is a deterministic classifier and therefore intentionally does
+    not implement ``predict_proba``. Use :meth:`decision_function` to inspect
+    signed margins around the fitted threshold.
     """
 
     def __init__(

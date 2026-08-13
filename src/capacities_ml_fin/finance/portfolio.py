@@ -18,9 +18,20 @@ from capacities_ml_fin.finance.returns import to_losses
 def normalize_weights(weights: ArrayLike):
     """Normalize static or time-varying portfolio weights to sum to one.
 
-    For a DataFrame or two-dimensional array, normalization is performed across
-    assets for each row. For a Series or one-dimensional array, it is performed
-    once across the vector.
+    Parameters
+    ----------
+    weights : array-like
+        Static one-dimensional weights or time-by-asset weights.
+
+    Returns
+    -------
+    ndarray, Series, or DataFrame
+        Weights normalized once for a vector or row-wise for a matrix.
+
+    Raises
+    ------
+    ValueError
+        If any normalization total is zero or non-finite.
     """
     if isinstance(weights, pd.Series):
         values = weights.astype(float)
@@ -50,7 +61,18 @@ def normalize_weights(weights: ArrayLike):
 
 
 def equal_weights(assets: int | Sequence[str]):
-    """Return equal portfolio weights for a number or sequence of assets."""
+    """Construct an equally weighted portfolio.
+
+    Parameters
+    ----------
+    assets : int or sequence of str
+        Positive asset count or unique asset names.
+
+    Returns
+    -------
+    ndarray or Series
+        Weights equal to ``1 / n_assets``; names are preserved when supplied.
+    """
     if isinstance(assets, (int, np.integer)):
         n_assets = _validate_positive_integer(int(assets), name="assets")
         return np.full(n_assets, 1.0 / n_assets)
@@ -66,7 +88,18 @@ def equal_weights(assets: int | Sequence[str]):
 
 
 def market_cap_weights(market_caps: ArrayLike):
-    """Construct cross-sectional portfolio weights from positive market caps."""
+    """Construct cross-sectional weights proportional to market capitalizations.
+
+    Parameters
+    ----------
+    market_caps : array-like
+        Non-negative static or time-varying capitalizations.
+
+    Returns
+    -------
+    ndarray, Series, or DataFrame
+        Capitalizations normalized across assets.
+    """
     if isinstance(market_caps, (pd.Series, pd.DataFrame)):
         values = market_caps.astype(float)
         if values.isna().any().any() if isinstance(values, pd.DataFrame) else values.isna().any():
@@ -85,7 +118,20 @@ def market_cap_weights(market_caps: ArrayLike):
 
 # weight timing
 def lag_weights(weights: ArrayLike, *, periods: int = 1):
-    """Lag portfolio weights explicitly to prevent accidental contemporaneous use."""
+    """Lag time-varying weights to prevent contemporaneous use.
+
+    Parameters
+    ----------
+    weights : DataFrame or two-dimensional array-like
+        Time-by-asset portfolio weights.
+    periods : int, default=1
+        Positive lag length.
+
+    Returns
+    -------
+    DataFrame or ndarray
+        Shifted weights with missing leading rows.
+    """
     periods = _validate_positive_integer(periods, name="periods")
 
     if isinstance(weights, pd.Series):
@@ -106,11 +152,25 @@ def lag_weights(weights: ArrayLike, *, periods: int = 1):
 
 # portfolio aggregation
 def portfolio_returns(asset_returns: ArrayLike, weights: ArrayLike):
-    """Aggregate asset returns using static or time-varying portfolio weights.
+    """Aggregate asset returns using supplied portfolio weights.
 
-    Weights are used exactly as supplied. They are not lagged or normalized
-    implicitly; use :func:`lag_weights` and :func:`normalize_weights` when that
-    behavior is desired.
+    Parameters
+    ----------
+    asset_returns : DataFrame or two-dimensional array-like
+        Time-by-asset returns.
+    weights : array-like
+        Static asset weights or time-varying weights matching the return shape.
+
+    Returns
+    -------
+    ndarray or Series
+        One portfolio return per observation.
+
+    Notes
+    -----
+    Weights are neither normalized nor lagged implicitly. Apply
+    :func:`normalize_weights` and :func:`lag_weights` explicitly when required.
+    DataFrame weights are aligned by asset label.
     """
     if isinstance(asset_returns, pd.DataFrame):
         returns = asset_returns.astype(float)
@@ -162,5 +222,18 @@ def portfolio_returns(asset_returns: ArrayLike, weights: ArrayLike):
 
 
 def portfolio_losses(asset_returns: ArrayLike, weights: ArrayLike):
-    """Compute portfolio losses using the convention ``loss = -return``."""
+    """Aggregate portfolio returns and convert them to losses.
+
+    Parameters
+    ----------
+    asset_returns : DataFrame or two-dimensional array-like
+        Time-by-asset returns.
+    weights : array-like
+        Static or time-varying portfolio weights.
+
+    Returns
+    -------
+    ndarray or Series
+        Portfolio losses under the ``loss = -return`` convention.
+    """
     return to_losses(portfolio_returns(asset_returns, weights))

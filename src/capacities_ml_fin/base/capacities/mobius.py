@@ -25,7 +25,36 @@ from capacities_ml_fin.base.capacities.validation import check_mobius_capacity
 
 # Mobius capacity class
 class MobiusCapacity(BaseCapacity):
-    """Sparse Mobius coefficients defining an evaluable capacity."""
+    """Sparse Möbius representation of an evaluable finite capacity.
+
+    Parameters
+    ----------
+    coefficients : mapping
+        Möbius coefficients keyed by coalitions. Unspecified coefficients are
+        interpreted as zero; the empty coalition must not be supplied.
+    universe : VariableUniverse, optional
+        Existing universe. Mutually exclusive with ``n_elements`` and
+        ``var_names``.
+    n_elements : int, optional
+        Universe size when names are not supplied.
+    var_names : iterable of str, optional
+        Ordered variable names.
+    validation_tolerance : float, default=1e-9
+        Numerical tolerance for normalization and monotonicity checks.
+
+    Attributes
+    ----------
+    universe : VariableUniverse
+        Resolved event universe.
+    validation_tolerance : float
+        Tolerance used during validation.
+
+    Notes
+    -----
+    :meth:`value` returns a Möbius coefficient ``m(A)`` whereas
+    :meth:`event_value` reconstructs ``mu(A) = sum_{B subseteq A} m(B)``.
+    The full capacity table is not stored.
+    """
 
     def __init__(
         self,

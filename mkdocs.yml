@@ -1,0 +1,134 @@
+site_name: capacities-ml-fin
+site_description: Capacities, Choquet machine learning, and non-additive financial risk measures.
+site_url: https://ikercb2000.github.io/capacities_ml_fin/
+repo_name: ikercb2000/capacities_ml_fin
+repo_url: https://github.com/ikercb2000/capacities_ml_fin
+edit_uri: edit/main/docs/
+
+copyright: Copyright &copy; ikercb2000
+
+watch:
+  - src/capacities_ml_fin
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - toc.follow
+    - content.code.copy
+    - content.code.annotate
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+nav:
+  - Home: index.md
+
+  - Getting Started:
+      - Overview: getting-started/index.md
+      - Installation: getting-started/installation.md
+      - Quickstart: getting-started/quickstart.md
+      - Documentation website: getting-started/documentation.md
+      - Notebooks: getting-started/notebooks.md
+
+  - Theory:
+      - Overview: theory/index.md
+      - Capacities: theory/capacities.md
+      - Möbius representation: theory/mobius.md
+      - k-additivity: theory/k_additivity.md
+      - Choquet integral: theory/choquet_integral.md
+      - Shapley & interactions: theory/interpretation.md
+
+  - Machine Learning:
+      - Overview: ml/index.md
+      - Regression: ml/regression.md
+      - Classification: ml/classification.md
+      - Neural models: ml/neural.md
+      - Time series: ml/time_series.md
+      - Optimization: ml/optimization.md
+      - Preprocessing & model selection: ml/preprocessing_model_selection.md
+
+  - Finance:
+      - Overview: finance/index.md
+      - Returns & losses: finance/returns.md
+      - Features: finance/features.md
+      - Portfolio: finance/portfolio.md
+      - Point-in-time alignment: finance/alignment.md
+
+  - Risk:
+      - Overview: risk/index.md
+      - Distributions & capacities: risk/distributions_capacities.md
+      - Distortions & measures: risk/distortions_measures.md
+      - Spectral & Kusuoka: risk/spectral_kusuoka.md
+      - Conditional & rolling: risk/rolling_conditional.md
+      - Backtesting & validation: risk/backtesting_validation.md
+
+  - Examples:
+      - Overview: examples/index.md
+      - Capacity workflow: examples/capacity_workflow.md
+      - Regression pipeline: examples/regression_pipeline.md
+      - Classification pipeline: examples/classification_pipeline.md
+      - Time-series pipeline: examples/time_series_pipeline.md
+      - Finance pipeline: examples/finance_pipeline.md
+      - Risk pipeline: examples/risk_pipeline.md
+      - Optimization & model selection: examples/optimization_model_selection.md
+  - API Reference:
+      - Overview: api/index.md
+      - Capacities: api/capacities.md
+      - Integrals: api/integrals.md
+      - Interpretation: api/interpretation.md
+      - ML models: api/ml_models.md
+      - Optimization: api/optimization.md
+      - Preprocessing & model selection: api/preprocessing_model_selection.md
+      - Finance: api/finance.md
+      - Risk: api/risk.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths:
+            - src
+          options:
+            members_order: source
+            show_root_heading: true
+            show_root_full_path: false
+            show_source: true
+            show_signature_annotations: true
+            separate_signature: true
+            signature_crossrefs: true
+            merge_init_into_class: true
+            filters:
+              - "!^_"
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.arithmatex:
+      generic: true
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js

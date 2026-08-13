@@ -6,6 +6,8 @@ from typing import Protocol
 
 # variable universe protocol
 class VariableUniverseLike(Protocol):
+    """Structural protocol implemented by finite variable universes."""
+
     var_names: Iterable[str]
     n_elements: int
     name_to_index: Mapping[str, int]
@@ -13,6 +15,8 @@ class VariableUniverseLike(Protocol):
 # coalition value
 @dataclass(frozen=True, slots=True)
 class CoalitionValue:
+    """Immutable numeric value associated with one coalition."""
+
     coalition: frozenset[int]
     value: float
 
@@ -26,6 +30,8 @@ class CoalitionValue:
 # coalition map main class
 @dataclass(frozen=True, slots=True)
 class CoalitionMap:
+    """Read-only mapping shared by capacity and Möbius containers."""
+
     lookup_dict: Mapping[frozenset[int], float] = field(init=False, repr=False)
 
     def __len__(self) -> int:

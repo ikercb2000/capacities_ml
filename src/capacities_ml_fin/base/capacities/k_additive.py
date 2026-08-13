@@ -13,6 +13,39 @@ from capacities_ml_fin.base.capacities.validation import check_k_additivity
 
 # k-Additive capacity dataclass
 class KAdditiveCapacity(ExplicitCapacity):
+    """Explicit capacity reconstructed from values up to order ``k``.
+
+    Parameters
+    ----------
+    values : mapping
+        Capacity values for every coalition whose cardinality is at most
+        ``k``. Values for larger coalitions are completed from the implied
+        low-order Möbius coefficients.
+    k : int
+        Exact maximum order of non-zero Möbius coefficients. Must satisfy
+        ``1 <= k <= n_elements``.
+    universe : VariableUniverse, optional
+        Existing universe. Mutually exclusive with ``n_elements`` and
+        ``var_names``.
+    n_elements : int, optional
+        Number of elements when names are not supplied.
+    var_names : iterable of str, optional
+        Ordered variable names.
+
+    Attributes
+    ----------
+    k : int
+        Validated additivity order.
+    values : CapacityMap
+        Completed explicit capacity table.
+
+    Raises
+    ------
+    ValueError
+        If required low-order coalitions are missing or the completed capacity
+        is not normalized, monotone, and exactly ``k``-additive.
+    """
+
     def __init__(
         self,
         values: Mapping[CoalitionInput, float],

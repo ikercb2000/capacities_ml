@@ -13,7 +13,32 @@ from capacities_ml_fin.risk.distributions.utils import _loss_vector
 # empirical loss distribution
 @dataclass(slots=True)
 class EmpiricalLossDistribution:
-    """Finite loss distribution evaluated under an event capacity."""
+    """Finite empirical loss distribution under an event capacity.
+
+    Parameters
+    ----------
+    losses : array-like of shape (n_scenarios,)
+        Finite loss outcomes; larger values represent worse outcomes.
+    sample_weight : array-like, optional
+        Non-negative weights used to construct an additive capacity.
+    capacity : BaseCapacity, optional
+        Event capacity over scenarios. Mutually exclusive with
+        ``sample_weight``.
+
+    Attributes
+    ----------
+    losses : ndarray of shape (n_scenarios,)
+        Validated finite losses.
+    capacity : BaseCapacity
+        Capacity used for events and generalized quantiles.
+    sample_weight : ndarray or None
+        Normalized weights when the capacity is additive.
+
+    Notes
+    -----
+    The survival function is ``mu({loss > x})`` and the distribution function
+    is its conjugate ``1 - mu({loss > x})``.
+    """
 
     losses: ArrayLike
     sample_weight: ArrayLike | None = None

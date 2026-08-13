@@ -23,6 +23,8 @@ class ObjectiveSpec:
 # squared error objective specification
 @dataclass(slots=True)
 class SquaredErrorObjective(ObjectiveSpec):
+    """Squared-error objective for numerical and symbolic predictors."""
+
     target: ArrayLike
     predictor: Predictor
     penalty: Any = None
@@ -44,6 +46,8 @@ class SquaredErrorObjective(ObjectiveSpec):
 # absolute error objective specification
 @dataclass(slots=True)
 class AbsoluteErrorObjective(ObjectiveSpec):
+    """Absolute-error objective with optional regularization."""
+
     target: ArrayLike
     predictor: Predictor
     penalty: Any = None
@@ -65,6 +69,8 @@ class AbsoluteErrorObjective(ObjectiveSpec):
 # quantile loss objective specification
 @dataclass(slots=True)
 class QuantileLossObjective(ObjectiveSpec):
+    """Pinball-loss objective for conditional quantile estimation."""
+
     target: ArrayLike
     predictor: Predictor
     quantile: float
@@ -90,6 +96,8 @@ class QuantileLossObjective(ObjectiveSpec):
 # logistic negative log-likelihood objective specification
 @dataclass(slots=True)
 class LogisticNegativeLogLikelihood(ObjectiveSpec):
+    """Weighted binary negative log-likelihood on predicted logits."""
+
     target: ArrayLike
     predictor: Predictor
     sample_weight: ArrayLike | None = None
@@ -120,6 +128,8 @@ class LogisticNegativeLogLikelihood(ObjectiveSpec):
 # zero-one loss objective specification
 @dataclass(slots=True)
 class ZeroOneLossObjective(ObjectiveSpec):
+    """Discontinuous zero-one classification objective for derivative-free solvers."""
+
     target: ArrayLike
     predictor: Predictor
     mean: bool = False

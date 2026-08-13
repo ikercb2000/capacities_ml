@@ -15,7 +15,38 @@ from capacities_ml_fin.risk.rolling.utils import _series_values
 
 # rolling risk estimator
 class RollingRiskEstimator(BaseEstimator):
-    """Estimate one-step-ahead capital without using contemporaneous losses."""
+    """Estimate historical and future capital without look-ahead.
+
+    Parameters
+    ----------
+    risk_measure : Distortion or callable
+        Maps a historical loss sample to required capital.
+    window : int or None, default=250
+        Maximum history for rolling estimation.
+    window_type : {"rolling", "expanding"}, default="rolling"
+        Fixed-length or expanding estimation history.
+    min_periods : int, optional
+        Minimum history required before producing capital.
+    horizon : int, default=1
+        Number of consecutive losses aggregated before estimation.
+    decay : float, optional
+        Exponential decay in ``(0, 1]`` for older observations.
+
+    Attributes
+    ----------
+    losses_ : ndarray
+        Validated observed losses.
+    aggregated_losses_ : ndarray
+        Horizon-aggregated losses.
+    capital_ : ndarray
+        Capital forecast aligned with each realized loss.
+    nobs_ : int
+        Number of original observations.
+
+    Notes
+    -----
+    Capital at time ``t`` uses only observations preceding the loss forecast.
+    """
 
     def __init__(
         self,

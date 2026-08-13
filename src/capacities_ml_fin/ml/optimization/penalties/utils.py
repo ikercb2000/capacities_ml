@@ -5,6 +5,7 @@ from numpy.typing import ArrayLike, NDArray
 
 # penalty selection mask
 def selection_mask(selection: ArrayLike, size: int) -> NDArray[np.bool_]:
+    """Convert indices or a Boolean selector to a validated parameter mask."""
     array = np.asarray(selection)
     if array.dtype == bool:
         if array.shape != (size,):

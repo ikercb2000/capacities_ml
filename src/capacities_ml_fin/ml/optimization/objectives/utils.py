@@ -22,6 +22,7 @@ def squared_error_objective(
     mean: bool = True,
     symbolic_predictor: Any = None,
 ) -> SquaredErrorObjective:
+    """Create a squared-error objective from a target and predictor."""
     return SquaredErrorObjective(target, predictor, penalty, mean, symbolic_predictor)
 
 
@@ -34,6 +35,7 @@ def absolute_error_objective(
     mean: bool = True,
     symbolic_predictor: Any = None,
 ) -> AbsoluteErrorObjective:
+    """Create an absolute-error objective from a target and predictor."""
     return AbsoluteErrorObjective(target, predictor, penalty, mean, symbolic_predictor)
 
 
@@ -47,6 +49,7 @@ def quantile_loss_objective(
     mean: bool = True,
     symbolic_predictor: Any = None,
 ) -> QuantileLossObjective:
+    """Create a pinball-loss objective for the requested quantile."""
     return QuantileLossObjective(target, predictor, quantile, penalty, mean, symbolic_predictor)
 
 
@@ -60,6 +63,7 @@ def logistic_negative_log_likelihood(
     mean: bool = True,
     symbolic_predictor: Any = None,
 ) -> LogisticNegativeLogLikelihood:
+    """Create a weighted binary negative-log-likelihood objective."""
     return LogisticNegativeLogLikelihood(
         target,
         linear_predictor,
@@ -77,4 +81,5 @@ def zero_one_loss_objective(
     *,
     mean: bool = False,
 ) -> ZeroOneLossObjective:
+    """Create a discontinuous zero-one classification objective."""
     return ZeroOneLossObjective(target, classifier, mean)

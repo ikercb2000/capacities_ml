@@ -68,7 +68,18 @@ def price_returns(
 
 # loss convention
 def to_losses(returns: ArrayLike):
-    """Convert returns into losses using the convention ``loss = -return``."""
+    """Convert returns to losses using ``loss = -return``.
+
+    Parameters
+    ----------
+    returns : array-like
+        Return series or panel.
+
+    Returns
+    -------
+    ndarray, Series, or DataFrame
+        Negated values with the original container and labels preserved.
+    """
     if isinstance(returns, pd.Series):
         name = None if returns.name is None else f"{returns.name}_loss"
         return -returns.rename(name)
@@ -84,11 +95,26 @@ def aggregate_returns(
     horizon: int,
     method: str = "log",
 ):
-    """Aggregate historical returns over a trailing horizon.
+    """Aggregate returns over a trailing historical horizon.
 
-    Log returns are summed. Simple returns are compounded. The value at time
-    ``t`` uses observations ``t-horizon+1, ..., t`` and therefore contains no
-    future information.
+    Parameters
+    ----------
+    returns : array-like
+        Equally spaced return observations ordered through time.
+    horizon : int
+        Positive number of observations in each trailing window.
+    method : {"log", "simple"}, default="log"
+        Sum log returns or compound simple returns.
+
+    Returns
+    -------
+    ndarray, Series, or DataFrame
+        Trailing returns aligned at each window end. The first
+        ``horizon - 1`` rows are missing.
+
+    Notes
+    -----
+    The value at time ``t`` contains no observation after ``t``.
     """
     horizon = _validate_positive_integer(horizon, name="horizon")
     method = _validate_return_method(method)
@@ -132,11 +158,27 @@ def forward_returns(
     horizon: int,
     method: str = "log",
 ):
-    """Construct future-return targets using only observations after time ``t``.
+    """Construct forward aggregate-return targets.
 
-    The target stored at position ``t`` aggregates returns from ``t+1`` through
-    ``t+horizon``. The final ``horizon`` observations are therefore ``NaN``.
-    This convention is suitable for supervised financial forecasting datasets.
+    Parameters
+    ----------
+    returns : array-like
+        Equally spaced returns ordered through time.
+    horizon : int
+        Number of future observations in each target.
+    method : {"log", "simple"}, default="log"
+        Sum log returns or compound simple returns.
+
+    Returns
+    -------
+    ndarray, Series, or DataFrame
+        Target at ``t`` formed from ``t + 1`` through ``t + horizon``.
+        The final ``horizon`` rows are missing.
+
+    Notes
+    -----
+    These values are supervised targets and must not be included among
+    predictors available at time ``t``.
     """
     horizon = _validate_positive_integer(horizon, name="horizon")
     method = _validate_return_method(method)
@@ -172,17 +214,41 @@ def forward_losses(
     horizon: int,
     method: str = "log",
 ):
-    """Construct future-loss targets as the negative future aggregate return."""
+    """Construct forward losses as negative forward aggregate returns.
+
+    Parameters
+    ----------
+    returns : array-like
+        Return observations ordered through time.
+    horizon : int
+        Number of future observations per target.
+    method : {"log", "simple"}, default="log"
+        Return aggregation convention.
+
+    Returns
+    -------
+    ndarray, Series, or DataFrame
+        Forward targets under the ``loss = -return`` convention.
+    """
     future = forward_returns(returns, horizon=horizon, method=method)
     return to_losses(future)
 
 
 # excess returns
 def excess_returns(returns: ArrayLike, risk_free: ArrayLike | float):
-    """Compute arithmetic excess returns ``return - risk_free``.
+    """Subtract an aligned risk-free return from asset returns.
 
-    ``risk_free`` may be a scalar or an aligned Series/DataFrame/array. When
-    pandas objects are supplied, labels are aligned before subtraction.
+    Parameters
+    ----------
+    returns : array-like
+        Asset returns.
+    risk_free : float or array-like
+        Scalar or aligned risk-free returns.
+
+    Returns
+    -------
+    ndarray, Series, or DataFrame
+        Arithmetic excess returns with pandas labels aligned when present.
     """
     return _binary_pandas_operation(returns, risk_free, lambda x, y: x - y)
 
@@ -194,7 +260,22 @@ def wealth_index(
     method: str = "simple",
     initial_value: float = 1.0,
 ):
-    """Convert a return series into a cumulative wealth index."""
+    """Convert returns into a cumulative wealth index.
+
+    Parameters
+    ----------
+    returns : array-like
+        Simple or logarithmic returns ordered through time.
+    method : {"simple", "log"}, default="simple"
+        Compounding convention.
+    initial_value : float, default=1.0
+        Positive initial wealth.
+
+    Returns
+    -------
+    ndarray, Series, or DataFrame
+        Cumulative wealth with the original shape and labels.
+    """
     method = _validate_return_method(method)
     if not np.isfinite(initial_value) or initial_value <= 0.0:
         raise ValueError("initial_value must be a positive finite number.")

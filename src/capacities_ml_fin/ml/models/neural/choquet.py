@@ -294,7 +294,45 @@ class _ChoquetNeuralMixin:
 
 # Choquet neural regressor
 class ChoquetNeuralRegressor(_ChoquetNeuralMixin, RegressorMixin, BaseEstimator):
-    """One-hidden-layer neural regressor with Choquet aggregation units."""
+    """One-hidden-layer regressor with Choquet aggregation units.
+
+    Each hidden unit learns its own normalized monotone capacity. Activated
+    hidden outputs are combined by a linear output layer and optimized jointly.
+
+    Parameters
+    ----------
+    n_hidden : int, default=4
+        Number of Choquet hidden units.
+    activation : {"identity", "tanh", "relu", "logistic"}, default="tanh"
+        Hidden activation function.
+    sparsity : CapacitySparsity, optional
+        Capacity parameterization shared by the hidden units.
+    alpha : float, default=1e-4
+        L2 regularization strength.
+    max_iter : int, default=300
+        Maximum optimization iterations.
+    tol : float, default=1e-6
+        Optimization tolerance.
+    random_state : int, optional
+        Seed controlling initialization.
+    solver : {"scipy", "cvxpy", "pymoo"} or Solver, default="scipy"
+        Optimization backend.
+    solver_options : dict, optional
+        Additional backend options.
+
+    Attributes
+    ----------
+    capacities_ : list of BaseCapacity
+        Capacity learned by each hidden unit.
+    output_weights_ : ndarray of shape (n_hidden,)
+        Linear output weights.
+    intercept_ : float
+        Output intercept.
+    result_ : OptimizationResult
+        Numerical optimizer result.
+    n_features_in_ : int
+        Number of features seen during :meth:`fit`.
+    """
 
     def __init__(
         self,
@@ -353,7 +391,46 @@ class ChoquetNeuralRegressor(_ChoquetNeuralMixin, RegressorMixin, BaseEstimator)
 
 # Choquet neural classifier
 class ChoquetNeuralClassifier(_ChoquetNeuralMixin, ClassifierMixin, BaseEstimator):
-    """Binary neural classifier with a hidden layer of Choquet neurons."""
+    """Binary classifier with Choquet hidden units and logistic output.
+
+    Parameters
+    ----------
+    n_hidden : int, default=4
+        Number of Choquet hidden units.
+    activation : {"identity", "tanh", "relu", "logistic"}, default="tanh"
+        Hidden activation function.
+    sparsity : CapacitySparsity, optional
+        Capacity parameterization shared by hidden units.
+    alpha : float, default=1e-4
+        L2 regularization strength.
+    max_iter : int, default=300
+        Maximum optimization iterations.
+    tol : float, default=1e-6
+        Optimization tolerance.
+    random_state : int, optional
+        Seed controlling initialization.
+    solver : {"scipy", "cvxpy", "pymoo"} or Solver, default="scipy"
+        Optimization backend.
+    solver_options : dict, optional
+        Additional backend options.
+    class_weight : dict, "balanced", or None, default=None
+        Per-class likelihood weights.
+
+    Attributes
+    ----------
+    classes_ : ndarray of shape (2,)
+        Original binary labels.
+    capacities_ : list of BaseCapacity
+        Capacity learned by every hidden unit.
+    output_weights_ : ndarray of shape (n_hidden,)
+        Learned logit weights.
+    intercept_ : float
+        Learned logit intercept.
+    result_ : OptimizationResult
+        Numerical optimizer result.
+    n_features_in_ : int
+        Number of features seen during :meth:`fit`.
+    """
 
     def __init__(
         self,

@@ -13,7 +13,33 @@ from capacities_ml_fin.risk.distributions import EmpiricalLossDistribution
 
 # residual-bootstrap distribution
 class ResidualBootstrapDistribution(BaseEstimator):
-    """Turn a point predictor into empirical conditional loss distributions."""
+    """Conditional empirical distributions from point-model residuals.
+
+    Parameters
+    ----------
+    estimator : estimator object
+        Cloneable regressor implementing ``fit`` and ``predict``.
+    center_residuals : bool, default=True
+        Subtract the residual mean before resampling.
+    max_scenarios : int, optional
+        Maximum residual scenarios retained per prediction.
+    random_state : int, optional
+        Seed used when residual subsampling is required.
+
+    Attributes
+    ----------
+    estimator_ : estimator object
+        Fitted clone of the supplied estimator.
+    residuals_ : ndarray
+        In-sample residual scenarios.
+    n_features_in_ : int
+        Number of predictor columns seen during fitting.
+
+    Notes
+    -----
+    Each conditional distribution shifts the empirical residual sample by the
+    point prediction for its input row.
+    """
 
     def __init__(
         self,

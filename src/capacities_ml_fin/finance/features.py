@@ -29,10 +29,24 @@ def realized_volatility(
 ):
     """Estimate trailing realized volatility from equally spaced returns.
 
-    With ``demean=False``, the non-annualized estimate is the square root of
-    the rolling sum of squared returns. With ``demean=True``, it is the rolling
-    sample standard deviation multiplied by ``sqrt(window)``. If ``annualize``
-    is true, the window estimate is scaled by ``sqrt(periods_per_year/window)``.
+    Parameters
+    ----------
+    returns : array-like
+        Return series or panel ordered through time.
+    window : int, default=20
+        Number of observations in each trailing estimate.
+    demean : bool, default=False
+        Use the demeaned sample standard deviation when true; otherwise use
+        the square root of summed squared returns.
+    annualize : bool, default=False
+        Scale the window estimate to an annualized value.
+    periods_per_year : int, default=252
+        Annual frequency used when ``annualize=True``.
+
+    Returns
+    -------
+    ndarray, Series, or DataFrame
+        Trailing volatility aligned at each window end.
     """
     window = _validate_positive_integer(window, name="window")
     periods_per_year = _validate_positive_integer(
@@ -78,11 +92,23 @@ def momentum(
     skip: int = 21,
     method: str = "simple",
 ):
-    """Compute trailing return momentum without using future observations.
+    """Compute trailing return momentum with an optional skip period.
 
-    ``lookback`` is the total distance back from time ``t`` and ``skip`` is the
-    most recent part of that interval to omit. Thus ``lookback=252, skip=21``
-    aggregates the 231 observations ending 21 periods before ``t``.
+    Parameters
+    ----------
+    returns : array-like
+        Return observations ordered through time.
+    lookback : int, default=252
+        Total distance from the current observation to the start of the signal.
+    skip : int, default=21
+        Most recent observations omitted from the signal.
+    method : {"simple", "log"}, default="simple"
+        Compound simple returns or sum log returns.
+
+    Returns
+    -------
+    ndarray, Series, or DataFrame
+        Momentum signal based only on information at or before ``t - skip``.
     """
     lookback = _validate_positive_integer(lookback, name="lookback")
     if not isinstance(skip, (int, np.integer)) or int(skip) < 0:
@@ -127,7 +153,20 @@ def momentum(
 
 # drawdown features
 def drawdown(returns: ArrayLike, *, method: str = "simple"):
-    """Compute drawdown from the running maximum of a cumulative wealth index."""
+    """Compute drawdown from the running maximum wealth.
+
+    Parameters
+    ----------
+    returns : array-like
+        Return series or panel.
+    method : {"simple", "log"}, default="simple"
+        Return convention used to build wealth.
+
+    Returns
+    -------
+    ndarray, Series, or DataFrame
+        Relative decline ``wealth / running_max - 1``.
+    """
     wealth = wealth_index(returns, method=method)
     if isinstance(wealth, (pd.Series, pd.DataFrame)):
         return wealth / wealth.cummax() - 1.0
@@ -136,7 +175,20 @@ def drawdown(returns: ArrayLike, *, method: str = "simple"):
 
 
 def max_drawdown(returns: ArrayLike, *, method: str = "simple"):
-    """Return the most negative drawdown for each return series."""
+    """Return the most negative drawdown of each return series.
+
+    Parameters
+    ----------
+    returns : array-like
+        Return series or panel.
+    method : {"simple", "log"}, default="simple"
+        Return convention used to build wealth.
+
+    Returns
+    -------
+    float or ndarray or Series
+        Minimum drawdown for each input series.
+    """
     values = drawdown(returns, method=method)
     if isinstance(values, pd.DataFrame):
         return values.min(axis=0)
@@ -150,12 +202,36 @@ def max_drawdown(returns: ArrayLike, *, method: str = "simple"):
 
 # liquidity features
 def dollar_volume(price: ArrayLike, volume: ArrayLike):
-    """Compute traded dollar volume as ``price * volume``."""
+    """Compute traded dollar volume as price times volume.
+
+    Parameters
+    ----------
+    price, volume : array-like
+        Aligned prices and traded share volumes.
+
+    Returns
+    -------
+    ndarray, Series, or DataFrame
+        Elementwise traded values.
+    """
     return _binary_pandas_operation(price, volume, lambda x, y: x * y)
 
 
 def turnover(volume: ArrayLike, shares_outstanding: ArrayLike):
-    """Compute share turnover as ``volume / shares_outstanding``."""
+    """Compute share turnover relative to shares outstanding.
+
+    Parameters
+    ----------
+    volume : array-like
+        Traded share volume.
+    shares_outstanding : array-like
+        Strictly positive aligned shares outstanding.
+
+    Returns
+    -------
+    ndarray, Series, or DataFrame
+        Elementwise turnover ratios.
+    """
     def operation(x, y):
         if isinstance(y, (pd.Series, pd.DataFrame)):
             if (y <= 0.0).any().any() if isinstance(y, pd.DataFrame) else (y <= 0.0).any():
@@ -168,7 +244,18 @@ def turnover(volume: ArrayLike, shares_outstanding: ArrayLike):
 
 
 def relative_bid_ask_spread(bid: ArrayLike, ask: ArrayLike):
-    """Compute the quoted relative spread around the bid-ask midpoint."""
+    """Compute the quoted bid-ask spread relative to the midpoint.
+
+    Parameters
+    ----------
+    bid, ask : array-like
+        Positive aligned quotes satisfying ``ask >= bid``.
+
+    Returns
+    -------
+    ndarray, Series, or DataFrame
+        ``(ask - bid) / ((ask + bid) / 2)``.
+    """
     def operation(bid_values, ask_values):
         if isinstance(bid_values, (pd.Series, pd.DataFrame)):
             invalid_order = ask_values < bid_values
@@ -206,10 +293,21 @@ def amihud_illiquidity(
     *,
     window: int | None = None,
 ):
-    """Compute the Amihud price-impact proxy ``abs(return) / traded_value``.
+    """Compute the Amihud absolute-return price-impact proxy.
 
-    If ``window`` is provided, the daily proxy is replaced by its trailing
-    arithmetic mean over that many observations.
+    Parameters
+    ----------
+    returns : array-like
+        Asset returns.
+    traded_value : array-like
+        Strictly positive aligned dollar volumes.
+    window : int, optional
+        Replace point estimates with their trailing arithmetic mean.
+
+    Returns
+    -------
+    ndarray, Series, or DataFrame
+        ``abs(return) / traded_value``, optionally smoothed.
     """
     def operation(return_values, value_values):
         if isinstance(value_values, (pd.Series, pd.DataFrame)):

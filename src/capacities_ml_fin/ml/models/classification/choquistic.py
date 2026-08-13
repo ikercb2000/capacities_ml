@@ -40,8 +40,44 @@ _MIN_GAMMA = 1e-8
 
 # Choquistic regression
 class ChoquisticRegression(ClassifierMixin, BaseEstimator):
-    """
-    Choquistic regression as defined by Tehrani, Cheng and Hüllermeier.
+    """Probabilistic binary regression with a Choquet logistic link.
+
+    The latent utility is ``C_mu(x)`` and the positive-class log-odds are
+    ``gamma * (C_mu(x) - beta)``. The normalized monotone capacity ``mu``,
+    location ``beta``, and positive scale ``gamma`` are learned jointly.
+
+    Parameters
+    ----------
+    sparsity : CapacitySparsity, optional
+        Capacity parameterization. ``None`` uses a k-additive default.
+    solver : {"scipy", "cvxpy", "pymoo"} or Solver, default="scipy"
+        Optimization backend.
+    solver_options : dict, optional
+        Options forwarded to the backend.
+    class_weight : dict, "balanced", or None, default=None
+        Per-class weights applied to the negative log-likelihood.
+    penalty : callable or penalty object, optional
+        Regularization term added to the objective.
+
+    Attributes
+    ----------
+    classes_ : ndarray of shape (2,)
+        Original binary labels.
+    capacity_ : BaseCapacity
+        Fitted immutable capacity.
+    beta_ : float
+        Learned utility location.
+    gamma_ : float
+        Learned positive log-odds scale.
+    result_ : OptimizationResult
+        Numerical optimizer result and diagnostics.
+    n_features_in_ : int
+        Number of features seen during :meth:`fit`.
+
+    Notes
+    -----
+    Unlike :class:`ChoquetClassifier`, this model defines positive-class
+    probabilities through the logistic link and implements ``predict_proba``.
     """
 
     def __init__(

@@ -9,7 +9,23 @@ from capacities_ml_fin.base.capacities.utils import _order_permutation
 
 # common capacity base class
 class BaseCapacity(ABC):
-    """Common interface for immutable capacity objects."""
+    """Abstract interface for immutable finite capacities.
+
+    A capacity assigns a normalized, monotone value to every event in a finite
+    universe. Concrete implementations may store a full table, sparse Möbius
+    coefficients, or compute event values dynamically. Algorithms consume this
+    interface through :meth:`event_value` and never require materialization.
+
+    Attributes
+    ----------
+    n_elements : int
+        Number of elements in the event universe.
+
+    Notes
+    -----
+    Capacity instances become immutable after successful validation. Subclasses
+    should call ``self._freeze()`` at the end of construction.
+    """
 
     _capacity_frozen = False
 

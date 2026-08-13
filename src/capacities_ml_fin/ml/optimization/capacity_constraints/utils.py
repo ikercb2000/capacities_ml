@@ -36,6 +36,7 @@ def coalition_masks(n_features: int, max_order: int | None = None) -> tuple[int,
 
 # immediate coalition supersets
 def immediate_supersets(mask: int, n_features: int) -> tuple[int, ...]:
+    """Return bitmasks obtained by adding one absent feature to a coalition."""
     return tuple(
         mask | (1 << feature)
         for feature in range(n_features)
@@ -215,6 +216,7 @@ def pairwise_interaction_constraints(
 
 # interaction parameter mask
 def interaction_parameter_mask(parameter_masks: tuple[int, ...]) -> np.ndarray:
+    """Select Möbius parameters representing interactions of order at least two."""
     return np.asarray([mask.bit_count() >= 2 for mask in parameter_masks], dtype=bool)
 
 
@@ -226,6 +228,7 @@ def stable_ar_bounds(
     total_parameters: int,
     epsilon: float = 1e-6,
 ) -> VariableBounds:
+    """Create unconstrained bounds except for a stable AR coefficient."""
     if not 0.0 < epsilon < 1.0:
         raise ValueError("epsilon must lie in (0, 1).")
     if not 0 <= phi_position < total_parameters:
@@ -245,6 +248,7 @@ def direct_choquet_threshold_bounds(
     total_parameters: int,
     threshold_positions: tuple[int, ...],
 ) -> VariableBounds:
+    """Constrain selected direct-Choquet thresholds to the unit interval."""
     lower = np.full(total_parameters, -np.inf)
     upper = np.full(total_parameters, np.inf)
     for position in threshold_positions:

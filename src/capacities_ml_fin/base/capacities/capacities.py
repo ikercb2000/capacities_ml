@@ -20,7 +20,22 @@ from capacities_ml_fin.base.capacities.validation import check_monotonicity
 # variable universe class
 @dataclass(frozen=True, slots=True)
 class VariableUniverse:
-    """Names and index mapping inferred or supplied for a capacity."""
+    """Immutable names and index mapping for a finite universe.
+
+    Parameters
+    ----------
+    var_names : iterable of str
+        Unique, non-empty variable names in their canonical order.
+
+    Attributes
+    ----------
+    var_names : tuple of str
+        Canonical ordered variable names.
+    n_elements : int
+        Size of the universe.
+    name_to_index : mapping of str to int
+        Read-only lookup from each name to its zero-based index.
+    """
 
     var_names: Iterable[str]
     n_elements: int = field(init=False)
@@ -136,7 +151,35 @@ def resolve_universe(
 
 # explicit capacity class
 class ExplicitCapacity(BaseCapacity):
-    """A normalized monotone set function over a fixed feature set."""
+    """Explicit normalized monotone capacity over a finite universe.
+
+    Parameters
+    ----------
+    values : mapping
+        Capacity values keyed by coalitions expressed as names, indices, or
+        iterables thereof. Every non-empty coalition must be present; the empty
+        coalition is implicit and has value zero.
+    universe : VariableUniverse, optional
+        Existing universe. Mutually exclusive with ``n_elements`` and
+        ``var_names``.
+    n_elements : int, optional
+        Universe size used to generate names ``x0``, ``x1``, and so on.
+    var_names : iterable of str, optional
+        Ordered variable names. If no universe argument is supplied, the
+        smallest universe is inferred from ``values``.
+
+    Attributes
+    ----------
+    universe : VariableUniverse
+        Resolved event universe.
+    values : CapacityMap
+        Immutable table of coalition values.
+
+    Raises
+    ------
+    ValueError
+        If the table is incomplete, non-normalized, or non-monotone.
+    """
 
     def __init__(
         self,

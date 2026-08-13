@@ -15,11 +15,28 @@ def apply_publication_lag(
     lag: int | str | pd.Timedelta,
     available_col: str = "available_date",
 ) -> pd.DataFrame:
-    """Create an availability date from a reporting-period date and fixed lag.
+    """Create availability dates from reporting dates and a fixed lag.
 
-    This is a fallback for data without exact publication timestamps. A fixed
-    lag does not reproduce true point-in-time data, so callers should prefer
-    actual release dates whenever available.
+    Parameters
+    ----------
+    data : DataFrame
+        Source observations containing reporting-period dates.
+    period_end : str, default="period_end"
+        Reporting-date column.
+    lag : int, str, or Timedelta
+        Non-negative calendar lag; integers denote days.
+    available_col : str, default="available_date"
+        Name of the generated availability column.
+
+    Returns
+    -------
+    DataFrame
+        Copy of ``data`` containing parsed dates and availability timestamps.
+
+    Notes
+    -----
+    Exact publication timestamps are preferable when available. A fixed lag is
+    only a conservative fallback for point-in-time analysis.
     """
     if period_end not in data.columns:
         raise KeyError(f"Unknown period_end column: {period_end!r}.")
@@ -47,7 +64,24 @@ def validate_no_lookahead(
     available_time: str = "available_date",
     raise_on_error: bool = True,
 ) -> bool:
-    """Check that no observation is used before its information became available."""
+    """Check that every observation was available by its model date.
+
+    Parameters
+    ----------
+    data : DataFrame
+        Aligned modeling data.
+    model_time : str, default="date"
+        Timestamp at which each row is used.
+    available_time : str, default="available_date"
+        Timestamp at which information became observable.
+    raise_on_error : bool, default=True
+        Raise on the first violation instead of returning false.
+
+    Returns
+    -------
+    bool
+        True when every finite availability time is no later than model time.
+    """
     for column in (model_time, available_time):
         if column not in data.columns:
             raise KeyError(f"Unknown time column: {column!r}.")
@@ -77,12 +111,31 @@ def point_in_time_join(
     suffixes: tuple[str, str] = ("", "_right"),
     allow_exact_matches: bool = True,
 ) -> pd.DataFrame:
-    """Join each model row to the most recent information available by that time.
+    """Join each model row to the latest information available at that time.
 
-    The operation is always backward-looking: a row dated ``t`` can only match
-    a right-hand observation whose ``available_on`` timestamp is less than or
-    equal to ``t``. Optional grouping keys make the operation suitable for
-    asset-level panels such as fundamentals joined by ticker.
+    Parameters
+    ----------
+    left, right : DataFrame
+        Modeling rows and timestamped information releases.
+    left_on : str, default="date"
+        Model timestamp in ``left``.
+    available_on : str, default="available_date"
+        Information-availability timestamp in ``right``.
+    by : str or sequence of str, optional
+        Grouping keys such as ticker or entity identifier.
+    suffixes : tuple of str, default=("", "_right")
+        Suffixes for overlapping payload columns.
+    allow_exact_matches : bool, default=True
+        Whether information released exactly at model time is eligible.
+
+    Returns
+    -------
+    DataFrame
+        Backward as-of join in the original left-row order.
+
+    Notes
+    -----
+    The result is validated with :func:`validate_no_lookahead` before return.
     """
     if left_on not in left.columns:
         raise KeyError(f"Unknown left time column: {left_on!r}.")

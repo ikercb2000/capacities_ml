@@ -10,10 +10,35 @@ from sklearn.utils.validation import check_array, check_is_fitted
 
 # capacity normalizer
 class CapacityNormalizer(TransformerMixin, BaseEstimator):
-    """Scale capacity inputs to a common range with optional cost features.
+    """Scale commensurable capacity inputs and orient cost features.
 
-    Features listed in ``cost_features`` are reversed after scaling so that
-    larger transformed values always represent more desirable outcomes.
+    Each feature is independently min-max scaled. Selected cost criteria are
+    then reversed so that larger transformed values consistently represent
+    more desirable outcomes, as required by monotone Choquet models.
+
+    Parameters
+    ----------
+    feature_range : tuple of float, default=(0.0, 1.0)
+        Desired lower and upper bounds of transformed features.
+    cost_features : sequence of int or str, optional
+        Indices or DataFrame column names whose direction must be reversed.
+    clip : bool, default=True
+        Whether values outside the fitted range are clipped during transform.
+
+    Attributes
+    ----------
+    data_min_ : ndarray of shape (n_features,)
+        Per-feature minima observed during fitting.
+    data_max_ : ndarray of shape (n_features,)
+        Per-feature maxima observed during fitting.
+    scale_ : ndarray of shape (n_features,)
+        Multiplicative scaling factors.
+    cost_features_ : ndarray of int
+        Resolved indices of reversed features.
+    n_features_in_ : int
+        Number of features seen during :meth:`fit`.
+    feature_names_in_ : ndarray of str
+        Feature names seen during fitting when ``X`` provides string columns.
     """
 
     def __init__(

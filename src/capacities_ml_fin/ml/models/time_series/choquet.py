@@ -52,6 +52,30 @@ class ChoquetAutoRegressor(BaseForecaster):
         Whether to constrain the autoregressive scale to a contraction.
     stability_bound : float, default=0.999
         Absolute upper bound for ``phi`` when stationarity is enforced.
+
+    Attributes
+    ----------
+    capacity_ : BaseCapacity
+        Capacity learned over lagged observations.
+    phi_ : float
+        Autoregressive scale multiplying the Choquet aggregate.
+    intercept_ : float
+        Fitted intercept, or zero when ``fit_intercept=False``.
+    exogenous_coef_ : ndarray
+        Coefficients of optional exogenous regressors.
+    fittedvalues_ : Series
+        In-sample conditional-mean estimates after the initial lags.
+    resid_ : Series
+        In-sample residuals aligned with ``fittedvalues_``.
+    result_ : OptimizationResult
+        Numerical optimizer result and diagnostics.
+    order_ : tuple of int
+        AR-style order ``(lags, 0, 0)``.
+
+    Notes
+    -----
+    Forecasts beyond one step are generated recursively through the sktime
+    forecasting horizon interface.
     """
 
     _tags = {

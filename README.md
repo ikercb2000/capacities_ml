@@ -3,6 +3,8 @@
 `capacities_ml_fin` is a Python package for working with capacities, Choquet integrals,
 capacity-based machine-learning models, and non-additive risk measures.
 
+[Documentation](https://ikercb2000.github.io/capacities_ml_fin/) · [Source code](https://github.com/ikercb2000/capacities_ml_fin)
+
 The package provides the complete workflow around these objects: defining and
 validating capacities, computing Choquet integrals, learning capacities from data,
 interpreting interactions, selecting model complexity, and applying capacities to

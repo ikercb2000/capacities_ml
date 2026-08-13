@@ -39,6 +39,7 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/ikercb2000/capacities_ml_fin"
 Repository = "https://github.com/ikercb2000/capacities_ml_fin"
+Documentation = "https://ikercb2000.github.io/capacities_ml_fin/"
 Issues = "https://github.com/ikercb2000/capacities_ml_fin/issues"
 
 [tool.poetry]
@@ -59,7 +60,8 @@ dev = [
 ]
 docs = [
     "mkdocs-material (>=9.7.7,<10.0.0)",
-    "mkdocstrings-python (>=2.0.5,<3.0.0)"
+    "mkdocstrings-python (>=2.0.5,<3.0.0)",
+    "black (>=25.0.0,<27.0.0)"
 ]
 
 [build-system]
