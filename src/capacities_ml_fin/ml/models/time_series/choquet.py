@@ -15,7 +15,7 @@ from capacities_ml_fin.ml.models.time_series.utils import (
     autoregression_predictor,
     lag_matrix,
 )
-from capacities_ml_fin.ml.models.utils import capacity_design
+from capacities_ml_fin.ml.models.utils import capacity_design, resolve_solver
 from capacities_ml_fin.ml.optimization import (
     FullCapacity,
     Optimizer,
@@ -288,12 +288,7 @@ class ChoquetAutoRegressor(BaseForecaster):
     def _validate_hyperparameters(self) -> None:
         if not isinstance(self.lags, (int, np.integer)) or self.lags < 1:
             raise ValueError("lags must be a positive integer.")
-        try:
-            self.solver_ = Solver(self.solver)
-        except (TypeError, ValueError) as error:
-            raise ValueError(
-                "solver must be 'scipy', 'pymoo', or a Solver member."
-            ) from error
+        self.solver_ = resolve_solver(self.solver)
         if self.solver_ is Solver.CVXPY:
             raise ValueError(
                 "The phi-times-capacity model is non-convex; use SCIPY or PYMOO."

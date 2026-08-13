@@ -9,6 +9,7 @@ from pymoo.optimize import minimize
 
 # modules
 from capacities_ml_fin.ml.optimization.optimizer import OptimizerBackend
+from capacities_ml_fin.ml.optimization.backends.utils import project_to_feasible
 from capacities_ml_fin.ml.optimization.problem import OptimizationProblem
 from capacities_ml_fin.ml.optimization.result import OptimizationResult
 
@@ -22,6 +23,20 @@ class PymooGeneticOptimizer(OptimizerBackend[OptimizationProblem]):
     seed: int | None = None
     verbose: bool = False
     equality_tolerance: float = 1e-6
+    repair_tolerance: float = 1e-10
+    repair_max_iterations: int = 2_000
+
+    def __post_init__(self) -> None:
+        if self.population_size < 2:
+            raise ValueError("population_size must be at least two.")
+        if self.n_generations < 1:
+            raise ValueError("n_generations must be positive.")
+        if self.equality_tolerance <= 0.0:
+            raise ValueError("equality_tolerance must be positive.")
+        if self.repair_tolerance <= 0.0:
+            raise ValueError("repair_tolerance must be positive.")
+        if self.repair_max_iterations < 1:
+            raise ValueError("repair_max_iterations must be positive.")
 
     def solve(self, problem: OptimizationProblem) -> OptimizationResult:
         if problem.bounds is None:
@@ -103,26 +118,63 @@ class PymooGeneticOptimizer(OptimizerBackend[OptimizationProblem]):
         )
         runtime = perf_counter() - start
 
-        parameters = np.asarray(raw_result.X, dtype=float).reshape(-1)
-        if raw_result.F is None:
-            objective_value = float(problem.objective(parameters))
-        else:
-            objective_value = float(np.asarray(raw_result.F).reshape(-1)[0])
+        if raw_result.X is None:
+            initial = problem.initial_parameters.copy()
+            return OptimizationResult(
+                parameters=initial,
+                objective_value=float(problem.objective(initial)),
+                success=False,
+                status="no_candidate",
+                message="pymoo did not return a candidate solution.",
+                n_iterations=self.n_generations,
+                runtime_seconds=runtime,
+                solver_name="pymoo:GA",
+                diagnostics={
+                    "raw_maximum_constraint_violation": None,
+                    "maximum_constraint_violation": (
+                        problem.maximum_constraint_violation(initial)
+                    ),
+                    "repair_success": False,
+                    "repair_message": "No candidate was available for repair.",
+                    "n_evaluations": None,
+                },
+            )
+
+        raw_parameters = np.asarray(raw_result.X, dtype=float).reshape(-1)
+        raw_violation = problem.maximum_constraint_violation(raw_parameters)
+        projection = project_to_feasible(
+            problem,
+            raw_parameters,
+            tolerance=self.repair_tolerance,
+            max_iterations=self.repair_max_iterations,
+        )
+        parameters = projection.parameters
         violation = problem.maximum_constraint_violation(parameters)
+        objective_value = float(problem.objective(parameters))
         evaluator = getattr(raw_result.algorithm, "evaluator", None)
         n_evaluations = getattr(evaluator, "n_eval", None)
 
         return OptimizationResult(
             parameters=parameters,
             objective_value=objective_value,
-            success=bool(np.isfinite(objective_value) and violation <= max(self.equality_tolerance, 1e-6)),
+            success=bool(
+                np.isfinite(objective_value)
+                and violation <= self.repair_tolerance
+            ),
             status="completed",
-            message="pymoo genetic search completed.",
+            message=(
+                "pymoo genetic search and feasibility projection completed."
+                if violation <= self.repair_tolerance
+                else "pymoo solution could not be projected to strict feasibility."
+            ),
             n_iterations=self.n_generations,
             runtime_seconds=runtime,
             solver_name="pymoo:GA",
             diagnostics={
+                "raw_maximum_constraint_violation": raw_violation,
                 "maximum_constraint_violation": violation,
+                "repair_success": projection.success,
+                "repair_message": projection.message,
                 "n_evaluations": (
                     None if n_evaluations is None else int(n_evaluations)
                 ),

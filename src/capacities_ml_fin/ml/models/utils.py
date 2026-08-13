@@ -9,7 +9,17 @@ from capacities_ml_fin.base.integrals.batch_integrals import (
     capacity_design_matrix,
     mobius_design_matrix,
 )
-from capacities_ml_fin.ml.optimization.enums import CapacityRepresentation
+from capacities_ml_fin.ml.optimization.enums import CapacityRepresentation, Solver
+
+
+# solver parameter validation
+def resolve_solver(solver: Solver | str) -> Solver:
+    """Convert a public string or enum solver parameter to ``Solver``."""
+    try:
+        return Solver(solver)
+    except (TypeError, ValueError) as error:
+        choices = ", ".join(repr(member.value) for member in Solver)
+        raise ValueError(f"solver must be one of {choices}.") from error
 
 
 # fitted universe

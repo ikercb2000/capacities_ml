@@ -10,7 +10,11 @@ from sklearn.utils.validation import check_is_fitted, validate_data
 # modules
 from capacities_ml_fin.base.integrals.batch_integrals import batch_choquet_integral
 from capacities_ml_fin.ml.models.regression.utils import regression_predictor
-from capacities_ml_fin.ml.models.utils import capacity_design, fitted_universe
+from capacities_ml_fin.ml.models.utils import (
+    capacity_design,
+    fitted_universe,
+    resolve_solver,
+)
 from capacities_ml_fin.ml.optimization import (
     FullCapacity,
     Optimizer,
@@ -30,7 +34,7 @@ class ChoquetRegressor(RegressorMixin, BaseEstimator):
     def __init__(
         self,
         sparsity: CapacitySparsity | None = None,
-        solver: Solver = Solver.SCIPY,
+        solver: Solver | str = "scipy",
         solver_options: dict[str, Any] | None = None,
         penalty: Any = None,
     ) -> None:
@@ -53,8 +57,7 @@ class ChoquetRegressor(RegressorMixin, BaseEstimator):
         target = np.asarray(target, dtype=float).reshape(-1)
         if not np.all(np.isfinite(target)):
             raise ValueError("y must contain only finite values.")
-        if not isinstance(self.solver, Solver):
-            raise TypeError("solver must be a Solver enum member.")
+        self.solver_ = resolve_solver(self.solver)
 
         sparsity = self.sparsity if self.sparsity is not None else FullCapacity()
         compilation = sparsity.compile(self.universe_.n_elements)
@@ -96,7 +99,11 @@ class ChoquetRegressor(RegressorMixin, BaseEstimator):
             name="choquet_regression",
         )
         options = {} if self.solver_options is None else dict(self.solver_options)
-        result = Optimizer(solver=self.solver, **options).solve(problem)
+        result = Optimizer(solver=self.solver_, **options).solve(problem)
+        if not result.success:
+            raise RuntimeError(
+                f"Choquet regression optimization failed: {result.message}"
+            )
 
         self.problem_ = problem
         self.result_ = result

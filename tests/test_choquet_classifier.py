@@ -4,7 +4,7 @@ from sklearn.base import clone
 
 from capacities_ml_fin.base.integrals.batch_integrals import batch_choquet_integral
 from capacities_ml_fin.ml.models import ChoquetClassifier
-from capacities_ml_fin.ml.optimization import L1Penalty, Solver
+from capacities_ml_fin.ml.optimization import KAdditivity, L1Penalty, Solver
 
 
 def test_choquet_classifier_optimizes_capacity_and_threshold():
@@ -141,3 +141,34 @@ def test_choquet_classifier_requires_unit_interval_inputs():
     model.fit(X, y)
     with pytest.raises(ValueError, match=r"\[0, 1\]"):
         model.predict(2.0 * X)
+
+
+def test_pymoo_repairs_an_approximately_feasible_mobius_capacity():
+    X = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.5],
+            [1.0, 0.0, 0.5],
+            [1.0, 1.0, 1.0],
+            [0.3, 0.8, 0.4],
+            [0.8, 0.3, 0.6],
+        ]
+    )
+    y = np.array([0, 0, 0, 1, 1, 1])
+    model = ChoquetClassifier(
+        sparsity=KAdditivity(2),
+        solver="pymoo",
+        solver_options={
+            "population_size": 50,
+            "n_generations": 40,
+            "seed": 23,
+            "equality_tolerance": 1e-4,
+        },
+    ).fit(X, y)
+
+    assert model.result_.success
+    assert model.result_.diagnostics["maximum_constraint_violation"] <= 1e-10
+    assert sum(model.capacity_.to_named_dict().values()) == pytest.approx(
+        1.0,
+        abs=1e-9,
+    )

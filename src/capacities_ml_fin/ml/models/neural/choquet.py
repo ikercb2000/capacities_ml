@@ -14,7 +14,11 @@ from sklearn.utils.class_weight import compute_sample_weight
 from sklearn.utils.validation import check_is_fitted, validate_data
 
 # modules
-from capacities_ml_fin.ml.models.utils import capacity_design, fitted_universe
+from capacities_ml_fin.ml.models.utils import (
+    capacity_design,
+    fitted_universe,
+    resolve_solver,
+)
 from capacities_ml_fin.ml.optimization import FullCapacity, Problem, Solver
 from capacities_ml_fin.ml.optimization.backends.to_scipy import ScipyOptimizer
 from capacities_ml_fin.ml.optimization.constraints import (
@@ -70,7 +74,8 @@ class _ChoquetNeuralMixin:
             raise ValueError("tol must be positive.")
         if float(self.alpha) < 0.0:
             raise ValueError("alpha must be non-negative.")
-        if self.solver is not Solver.SCIPY:
+        self.solver_ = resolve_solver(self.solver)
+        if self.solver_ is not Solver.SCIPY:
             raise ValueError("Choquet neural estimators currently support solver=Solver.SCIPY.")
 
     # constrained neural optimization problem
@@ -300,7 +305,7 @@ class ChoquetNeuralRegressor(_ChoquetNeuralMixin, RegressorMixin, BaseEstimator)
         max_iter: int = 300,
         tol: float = 1e-6,
         random_state: int | None = None,
-        solver: Solver = Solver.SCIPY,
+        solver: Solver | str = "scipy",
         solver_options: dict[str, Any] | None = None,
     ) -> None:
         self.n_hidden = n_hidden
@@ -312,6 +317,12 @@ class ChoquetNeuralRegressor(_ChoquetNeuralMixin, RegressorMixin, BaseEstimator)
         self.random_state = random_state
         self.solver = solver
         self.solver_options = solver_options
+
+    def __sklearn_tags__(self):
+        """Declare stochastic behavior when no seed is supplied."""
+        tags = super().__sklearn_tags__()
+        tags.non_deterministic = self.random_state is None
+        return tags
 
     def fit(
         self,
@@ -353,7 +364,7 @@ class ChoquetNeuralClassifier(_ChoquetNeuralMixin, ClassifierMixin, BaseEstimato
         max_iter: int = 300,
         tol: float = 1e-6,
         random_state: int | None = None,
-        solver: Solver = Solver.SCIPY,
+        solver: Solver | str = "scipy",
         solver_options: dict[str, Any] | None = None,
         class_weight: dict[Any, float] | str | None = None,
     ) -> None:
@@ -367,6 +378,13 @@ class ChoquetNeuralClassifier(_ChoquetNeuralMixin, ClassifierMixin, BaseEstimato
         self.solver = solver
         self.solver_options = solver_options
         self.class_weight = class_weight
+
+    def __sklearn_tags__(self):
+        """Declare binary output and optional stochastic behavior."""
+        tags = super().__sklearn_tags__()
+        tags.classifier_tags.multi_class = False
+        tags.non_deterministic = self.random_state is None
+        return tags
 
     def fit(
         self,
@@ -416,6 +434,7 @@ class ChoquetNeuralClassifier(_ChoquetNeuralMixin, ClassifierMixin, BaseEstimato
     # binary prediction
     def predict(self, X: ArrayLike) -> np.ndarray:
         """Predict binary labels."""
+        check_is_fitted(self, ["classes_", "result_", "parameterization_"])
         return self.classes_[(self.decision_function(X) >= 0.0).astype(int)]
 
 

@@ -17,7 +17,11 @@ from capacities_ml_fin.ml.models.classification.utils import (
     choquistic_logits,
     validate_unit_interval,
 )
-from capacities_ml_fin.ml.models.utils import capacity_design, fitted_universe
+from capacities_ml_fin.ml.models.utils import (
+    capacity_design,
+    fitted_universe,
+    resolve_solver,
+)
 from capacities_ml_fin.ml.optimization import (
     KAdditivity,
     Optimizer,
@@ -43,7 +47,7 @@ class ChoquisticRegression(ClassifierMixin, BaseEstimator):
     def __init__(
         self,
         sparsity: CapacitySparsity | None = None,
-        solver: Solver = Solver.SCIPY,
+        solver: Solver | str = "scipy",
         solver_options: dict[str, Any] | None = None,
         class_weight: dict[Any, float] | str | None = None,
         penalty: Any = None,
@@ -53,6 +57,13 @@ class ChoquisticRegression(ClassifierMixin, BaseEstimator):
         self.solver_options = solver_options
         self.class_weight = class_weight
         self.penalty = penalty
+
+    def __sklearn_tags__(self):
+        """Declare the binary, normalized-input estimator contract."""
+        tags = super().__sklearn_tags__()
+        tags.classifier_tags.multi_class = False
+        tags.input_tags.positive_only = True
+        return tags
 
     def fit(
         self,
@@ -76,9 +87,8 @@ class ChoquisticRegression(ClassifierMixin, BaseEstimator):
         target = encoder.fit_transform(raw_target)
         if encoder.classes_.size != 2:
             raise ValueError("y must contain exactly two distinct labels.")
-        if not isinstance(self.solver, Solver):
-            raise TypeError("solver must be a Solver enum member.")
-        if self.solver is not Solver.SCIPY:
+        self.solver_ = resolve_solver(self.solver)
+        if self.solver_ is not Solver.SCIPY:
             raise ValueError(
                 "The paper formulation is fitted with sequential quadratic "
                 "programming; use Solver.SCIPY."
@@ -157,7 +167,7 @@ class ChoquisticRegression(ClassifierMixin, BaseEstimator):
             name="choquistic_regression",
         )
         options = {} if self.solver_options is None else dict(self.solver_options)
-        result = Optimizer(solver=self.solver, **options).solve(problem)
+        result = Optimizer(solver=self.solver_, **options).solve(problem)
         if not result.success:
             raise RuntimeError(f"Choquistic optimization failed: {result.message}")
 

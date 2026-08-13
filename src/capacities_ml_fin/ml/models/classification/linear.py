@@ -16,7 +16,11 @@ from capacities_ml_fin.ml.models.classification.utils import (
     scaled_linear_classifier,
     validate_unit_interval,
 )
-from capacities_ml_fin.ml.models.utils import capacity_design, fitted_universe
+from capacities_ml_fin.ml.models.utils import (
+    capacity_design,
+    fitted_universe,
+    resolve_solver,
+)
 from capacities_ml_fin.ml.optimization import (
     FullCapacity,
     Optimizer,
@@ -42,7 +46,7 @@ class ChoquetClassifier(ClassifierMixin, BaseEstimator):
     def __init__(
         self,
         sparsity: CapacitySparsity | None = None,
-        solver: Solver = Solver.PYMOO,
+        solver: Solver | str = "pymoo",
         solver_options: dict[str, Any] | None = None,
         penalty: Any = None,
         learn_feature_scales: bool = True,
@@ -52,6 +56,18 @@ class ChoquetClassifier(ClassifierMixin, BaseEstimator):
         self.solver_options = solver_options
         self.penalty = penalty
         self.learn_feature_scales = learn_feature_scales
+
+    def __sklearn_tags__(self):
+        """Declare the binary, normalized-input estimator contract."""
+        tags = super().__sklearn_tags__()
+        tags.classifier_tags.multi_class = False
+        tags.input_tags.positive_only = True
+        options = {} if self.solver_options is None else self.solver_options
+        tags.non_deterministic = (
+            self.solver in ("pymoo", Solver.PYMOO)
+            and options.get("seed") is None
+        )
+        return tags
 
     def fit(self, X: ArrayLike, y: ArrayLike) -> "ChoquetClassifier":
         """Fit the capacity, optional feature scales and decision threshold."""
@@ -73,8 +89,7 @@ class ChoquetClassifier(ClassifierMixin, BaseEstimator):
         target = label_encoder.fit_transform(raw_target)
         if label_encoder.classes_.size != 2:
             raise ValueError("y must contain exactly two distinct labels.")
-        if not isinstance(self.solver, Solver):
-            raise TypeError("solver must be a Solver enum member.")
+        self.solver_ = resolve_solver(self.solver)
         if not isinstance(self.learn_feature_scales, (bool, np.bool_)):
             raise TypeError("learn_feature_scales must be boolean.")
 
@@ -145,7 +160,13 @@ class ChoquetClassifier(ClassifierMixin, BaseEstimator):
             name="choquet_linear_classifier",
         )
         options = {} if self.solver_options is None else dict(self.solver_options)
-        result = Optimizer(solver=self.solver, **options).solve(problem)
+        result = Optimizer(solver=self.solver_, **options).solve(problem)
+        if not result.success:
+            violation = result.diagnostics.get("maximum_constraint_violation")
+            raise RuntimeError(
+                "Choquet classification optimization failed: "
+                f"{result.message} Maximum constraint violation: {violation}."
+            )
 
         # fitted scikit-learn state
         self.problem_ = problem
