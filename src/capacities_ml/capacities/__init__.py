@@ -6,6 +6,11 @@ from capacities_ml.capacities.mobius import (
     inverse_mobius_transform,
     mobius_transform,
 )
+from capacities_ml.capacities.validation import (
+    is_concave_capacity,
+    is_convex_capacity,
+    validate_capacity,
+)
 
 __all__ = [
     "BaseCapacity",
@@ -14,5 +19,8 @@ __all__ = [
     "MobiusCapacity",
     "VariableUniverse",
     "inverse_mobius_transform",
+    "is_concave_capacity",
+    "is_convex_capacity",
     "mobius_transform",
+    "validate_capacity",
 ]

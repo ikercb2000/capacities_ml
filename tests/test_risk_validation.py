@@ -1,24 +1,11 @@
 import numpy as np
 
 from capacities_ml.risk import (
-    DistortedCapacity,
     DistortionRiskMeasure,
     ExpectedShortfallDistortion,
-    ProbabilityCapacity,
-    ProportionalHazardsDistortion,
     check_risk_measure_axioms,
     is_comonotonic,
-    is_concave_event_capacity,
-    is_convex_event_capacity,
 )
-
-
-def test_concave_distortion_of_probability_is_concave_capacity():
-    probability = ProbabilityCapacity([0.2, 0.3, 0.5])
-    capacity = DistortedCapacity(probability, ProportionalHazardsDistortion(0.5))
-
-    assert is_concave_event_capacity(capacity)
-    assert not is_convex_event_capacity(capacity)
 
 
 def test_expected_shortfall_satisfies_risk_axioms_on_comonotonic_losses():

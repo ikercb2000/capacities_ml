@@ -4,82 +4,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 # modules
-from capacities_ml.capacities import BaseCapacity
-from capacities_ml.risk.distortions import Distortion
 from capacities_ml.risk.validation.validation import RiskAxiomReport
-
-
-# event enumeration
-def _all_event_values(capacity: BaseCapacity, max_scenarios: int) -> np.ndarray:
-    if capacity.n_elements > max_scenarios:
-        raise ValueError(
-            f"Exact validation is limited to {max_scenarios} scenarios; "
-            f"received {capacity.n_elements}."
-        )
-    values = np.empty(1 << capacity.n_elements, dtype=float)
-    positions = np.arange(capacity.n_elements)
-    for encoding in range(values.size):
-        event = (encoding & (1 << positions)) != 0
-        values[encoding] = capacity.event_value(event)
-    return values
-
-
-# event capacity validation
-def validate_event_capacity(
-    capacity: BaseCapacity,
-    *,
-    max_scenarios: int = 16,
-    tolerance: float = 1e-10,
-) -> None:
-    """Check normalization and monotonicity exactly on a finite event space."""
-    values = _all_event_values(capacity, max_scenarios)
-    if not np.isclose(values[0], 0.0, atol=tolerance):
-        raise ValueError("An event capacity must assign zero to the empty event.")
-    if not np.isclose(values[-1], 1.0, atol=tolerance):
-        raise ValueError("An event capacity must assign one to the full event.")
-    for event in range(values.size):
-        for scenario in range(capacity.n_elements):
-            if event & (1 << scenario):
-                continue
-            superset = event | (1 << scenario)
-            if values[event] > values[superset] + tolerance:
-                raise ValueError("The event capacity is not monotone.")
-
-
-# concave event capacity
-def is_concave_event_capacity(
-    capacity: BaseCapacity,
-    *,
-    max_scenarios: int = 8,
-    tolerance: float = 1e-10,
-) -> bool:
-    """Check submodularity of an event capacity by exhaustive enumeration."""
-    values = _all_event_values(capacity, max_scenarios)
-    for first in range(values.size):
-        for second in range(values.size):
-            if values[first | second] + values[first & second] > (
-                values[first] + values[second] + tolerance
-            ):
-                return False
-    return True
-
-
-# convex event capacity
-def is_convex_event_capacity(
-    capacity: BaseCapacity,
-    *,
-    max_scenarios: int = 8,
-    tolerance: float = 1e-10,
-) -> bool:
-    """Check supermodularity of an event capacity by exhaustive enumeration."""
-    values = _all_event_values(capacity, max_scenarios)
-    for first in range(values.size):
-        for second in range(values.size):
-            if values[first | second] + values[first & second] < (
-                values[first] + values[second] - tolerance
-            ):
-                return False
-    return True
 
 
 # comonotonicity
@@ -146,11 +71,3 @@ def check_risk_measure_axioms(
         convexity=bool(convexity),
         comonotonic_additivity=comonotonic_additivity,
     )
-
-
-# distortion validation
-def validate_distortion(distortion: Distortion) -> None:
-    """Validate a distortion through its public numerical contract."""
-    if not isinstance(distortion, Distortion):
-        raise TypeError("distortion must be a Distortion instance.")
-    distortion.validate()

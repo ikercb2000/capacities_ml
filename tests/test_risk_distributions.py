@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+from capacities_ml.capacities import validate_capacity
 from capacities_ml.risk import (
     DistortedCapacity,
     EmpiricalLossDistribution,
@@ -8,7 +9,6 @@ from capacities_ml.risk import (
     LowerEnvelopeCapacity,
     ProbabilityCapacity,
     UpperEnvelopeCapacity,
-    validate_event_capacity,
 )
 
 
@@ -30,7 +30,7 @@ def test_probability_and_distorted_capacities_evaluate_event_masks():
 
     assert probability.event_value([True, False, True]) == pytest.approx(0.5)
     assert distorted.event_value([True, False, False]) == pytest.approx(0.5)
-    validate_event_capacity(distorted)
+    validate_capacity(distorted)
 
 
 def test_probability_envelopes_capture_model_uncertainty():

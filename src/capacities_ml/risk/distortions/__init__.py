@@ -7,6 +7,7 @@ from capacities_ml.risk.distortions.distortions import (
     ProportionalHazardsDistortion,
     ValueAtRiskDistortion,
 )
+from capacities_ml.risk.distortions.utils import validate_distortion
 
 __all__ = [
     "CustomDistortion",
@@ -16,4 +17,5 @@ __all__ = [
     "PiecewiseLinearDistortion",
     "ProportionalHazardsDistortion",
     "ValueAtRiskDistortion",
+    "validate_distortion",
 ]

@@ -28,6 +28,7 @@ from capacities_ml.risk.distortions import (
     PiecewiseLinearDistortion,
     ProportionalHazardsDistortion,
     ValueAtRiskDistortion,
+    validate_distortion,
 )
 from capacities_ml.risk.measures import (
     DistortionRiskMeasure,
@@ -45,10 +46,6 @@ from capacities_ml.risk.validation import (
     RiskAxiomReport,
     check_risk_measure_axioms,
     is_comonotonic,
-    is_concave_event_capacity,
-    is_convex_event_capacity,
-    validate_distortion,
-    validate_event_capacity,
 )
 
 __all__ = [
@@ -87,13 +84,10 @@ __all__ = [
     "generalized_value_at_risk",
     "hac_mean_interval",
     "is_comonotonic",
-    "is_concave_event_capacity",
-    "is_convex_event_capacity",
     "kupiec_coverage_test",
     "risk_contributions",
     "rolling_risk_estimates",
     "stress_backtest",
     "validate_distortion",
-    "validate_event_capacity",
     "value_at_risk",
 ]
