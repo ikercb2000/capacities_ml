@@ -54,3 +54,36 @@ def test_choquet_classifier_accepts_arbitrary_binary_labels():
     assert model.classes_.tolist() == ["negative", "positive"]
     assert set(model.predict(X)).issubset(set(model.classes_))
     assert model.predict_proba(X).shape == (4, 2)
+
+
+def test_choquet_classifier_is_serializable(estimator_roundtrip):
+    X = np.array(
+        [
+            [0.0, 0.0],
+            [0.0, 1.0],
+            [1.0, 0.0],
+            [1.0, 1.0],
+        ]
+    )
+    y = np.array(["negative", "negative", "positive", "positive"])
+    model = ChoquetClassifier(
+        universe=VariableUniverse(("x0", "x1")),
+        solver=Solver.PYMOO,
+        solver_options={
+            "population_size": 20,
+            "n_generations": 10,
+            "seed": 7,
+        },
+    ).fit(X, y)
+
+    restored = estimator_roundtrip(model)
+
+    np.testing.assert_array_equal(restored.predict(X), model.predict(X))
+    np.testing.assert_allclose(
+        restored.decision_function(X),
+        model.decision_function(X),
+    )
+    np.testing.assert_allclose(restored.predict_proba(X), model.predict_proba(X))
+    assert restored.problem_.name == model.problem_.name
+    assert restored.result_.diagnostics == model.result_.diagnostics
+    assert restored.capacity_.to_named_dict() == model.capacity_.to_named_dict()

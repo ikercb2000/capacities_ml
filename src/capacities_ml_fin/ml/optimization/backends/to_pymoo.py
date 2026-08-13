@@ -109,6 +109,8 @@ class PymooGeneticOptimizer(OptimizerBackend[OptimizationProblem]):
         else:
             objective_value = float(np.asarray(raw_result.F).reshape(-1)[0])
         violation = problem.maximum_constraint_violation(parameters)
+        evaluator = getattr(raw_result.algorithm, "evaluator", None)
+        n_evaluations = getattr(evaluator, "n_eval", None)
 
         return OptimizationResult(
             parameters=parameters,
@@ -121,6 +123,8 @@ class PymooGeneticOptimizer(OptimizerBackend[OptimizationProblem]):
             solver_name="pymoo:GA",
             diagnostics={
                 "maximum_constraint_violation": violation,
-                "raw_result": raw_result,
+                "n_evaluations": (
+                    None if n_evaluations is None else int(n_evaluations)
+                ),
             },
         )

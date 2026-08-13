@@ -1,5 +1,6 @@
 # imports
 from __future__ import annotations
+from functools import partial
 from typing import Any
 import numpy as np
 from numpy.typing import ArrayLike
@@ -8,6 +9,8 @@ from sklearn.utils.validation import check_X_y, check_is_fitted
 
 # modules
 from capacities_ml_fin.base.capacities import VariableUniverse
+from capacities_ml_fin.base.integrals.batch_integrals import batch_choquet_integral
+from capacities_ml_fin.ml.models.regression.utils import regression_predictor
 from capacities_ml_fin.ml.models.utils import capacity_design, validate_features
 from capacities_ml_fin.ml.optimization import (
     FullCapacity,
@@ -71,17 +74,18 @@ class ChoquetRegressor(RegressorMixin, BaseEstimator):
         capacity_slice = layout.slice("capacity")
         intercept_slice = layout.slice("intercept")
 
-        def predictor(parameters: np.ndarray) -> np.ndarray:
-            return design @ parameters[capacity_slice] + parameters[intercept_slice][0]
-
-        def symbolic_predictor(variable: Any) -> Any:
-            return design @ variable[capacity_slice] + variable[intercept_slice][0]
+        predictor = partial(
+            regression_predictor,
+            design=design,
+            capacity_slice=capacity_slice,
+            intercept_slice=intercept_slice,
+        )
 
         objective = SquaredErrorObjective(
             target=target,
             predictor=predictor,
             penalty=self.penalty,
-            symbolic_predictor=symbolic_predictor,
+            symbolic_predictor=predictor,
         )
         problem = Problem.from_capacity(
             universe=self.universe,
@@ -107,15 +111,9 @@ class ChoquetRegressor(RegressorMixin, BaseEstimator):
 
     def predict(self, X: ArrayLike) -> np.ndarray:
         """Predict continuous responses."""
-        check_is_fitted(self, ["result_", "problem_", "intercept_"])
+        check_is_fitted(self, ["capacity_", "intercept_"])
         matrix = validate_features(X, self.universe)
-        design = capacity_design(
-            matrix,
-            self.problem_.parameter_masks,
-            self.problem_.representation,
-        )
-        blocks = self.problem_.parameter_layout.unpack(self.result_.parameters)
-        return design @ blocks["capacity"] + blocks["intercept"][0]
+        return batch_choquet_integral(matrix, self.capacity_) + self.intercept_
 
     def fit_predict(self, X: ArrayLike, y: ArrayLike) -> np.ndarray:
         """Fit the model and return predictions for ``X``."""

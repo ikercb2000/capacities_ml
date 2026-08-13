@@ -54,3 +54,27 @@ def test_choquistic_regression_requires_normalized_predictors(
     model.fit(X, y)
     with pytest.raises(ValueError, match=r"\[0, 1\]"):
         model.predict(2.0 * X)
+
+
+def test_choquistic_regression_is_serializable(
+    binary_classification_sample,
+    estimator_roundtrip,
+):
+    X, y = binary_classification_sample
+    model = ChoquisticRegression(
+        universe=VariableUniverse(("x0", "x1")),
+        class_weight="balanced",
+    ).fit(X, y)
+
+    restored = estimator_roundtrip(model)
+
+    np.testing.assert_array_equal(restored.predict(X), model.predict(X))
+    np.testing.assert_allclose(
+        restored.decision_function(X),
+        model.decision_function(X),
+    )
+    np.testing.assert_allclose(restored.predict_proba(X), model.predict_proba(X))
+    np.testing.assert_allclose(restored.utility_function(X), model.utility_function(X))
+    assert restored.problem_.name == model.problem_.name
+    assert restored.result_.solver_name == model.result_.solver_name
+    assert restored.capacity_.to_named_dict() == model.capacity_.to_named_dict()

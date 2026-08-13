@@ -1,6 +1,9 @@
+import io
+import pickle
 import sys
 from pathlib import Path
 
+import joblib
 import numpy as np
 import pytest
 
@@ -28,3 +31,20 @@ def binary_classification_sample() -> tuple[np.ndarray, np.ndarray]:
         ["negative", "negative", "positive", "positive", "positive", "negative"]
     )
     return X, y
+
+
+@pytest.fixture(params=("pickle", "joblib"))
+def estimator_roundtrip(request):
+    """Serialize and restore an estimator with a supported persistence tool."""
+
+    def roundtrip(estimator):
+        buffer = io.BytesIO()
+        if request.param == "pickle":
+            pickle.dump(estimator, buffer)
+            buffer.seek(0)
+            return pickle.load(buffer)
+        joblib.dump(estimator, buffer)
+        buffer.seek(0)
+        return joblib.load(buffer)
+
+    return roundtrip

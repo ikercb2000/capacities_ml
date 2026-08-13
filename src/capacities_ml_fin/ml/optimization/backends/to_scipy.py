@@ -68,6 +68,5 @@ class ScipyOptimizer(OptimizerBackend[OptimizationProblem]):
             solver_name=f"scipy:{self.method}",
             diagnostics={
                 "maximum_constraint_violation": violation,
-                "raw_result": raw_result,
             },
         )

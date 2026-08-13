@@ -12,9 +12,9 @@ from sklearn.utils.validation import check_X_y, check_is_fitted
 
 # modules
 from capacities_ml_fin.base.capacities import VariableUniverse
+from capacities_ml_fin.base.integrals.batch_integrals import batch_choquet_integral
 from capacities_ml_fin.ml.models.classification.utils import (
     apply_choquistic_link,
-    choquet_scores,
     choquistic_logits,
     validate_unit_interval,
 )
@@ -179,15 +179,9 @@ class ChoquisticRegression(ClassifierMixin, BaseEstimator):
     # latent Choquet utility
     def utility_function(self, X: ArrayLike) -> np.ndarray:
         """Return the latent utility ``C_mu(X)`` from the paper's first stage."""
-        check_is_fitted(self, ["result_", "problem_", "gamma_", "beta_"])
+        check_is_fitted(self, ["capacity_", "gamma_", "beta_"])
         matrix = validate_unit_interval(validate_features(X, self.universe))
-        design = capacity_design(
-            matrix,
-            self.problem_.parameter_masks,
-            self.problem_.representation,
-        )
-        blocks = self.problem_.parameter_layout.unpack(self.result_.parameters)
-        return choquet_scores(design, blocks["capacity"])
+        return batch_choquet_integral(matrix, self.capacity_)
 
     # logistic decision score
     def decision_function(self, X: ArrayLike) -> np.ndarray:

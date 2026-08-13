@@ -10,8 +10,8 @@ from sklearn.utils.validation import check_array, check_is_fitted, column_or_1d
 
 # modules
 from capacities_ml_fin.base.capacities import VariableUniverse
+from capacities_ml_fin.base.integrals.batch_integrals import batch_choquet_integral
 from capacities_ml_fin.ml.models.classification.utils import (
-    choquet_scores,
     linear_classifier,
     threshold_predictions,
 )
@@ -120,15 +120,9 @@ class ChoquetClassifier(ClassifierMixin, BaseEstimator):
 
     def decision_function(self, X: ArrayLike) -> np.ndarray:
         """Return Choquet scores before thresholding."""
-        check_is_fitted(self, ["result_", "problem_", "threshold_"])
+        check_is_fitted(self, ["capacity_", "threshold_"])
         matrix = validate_features(X, self.universe)
-        design = capacity_design(
-            matrix,
-            self.problem_.parameter_masks,
-            self.problem_.representation,
-        )
-        blocks = self.problem_.parameter_layout.unpack(self.result_.parameters)
-        return choquet_scores(design, blocks["capacity"])
+        return batch_choquet_integral(matrix, self.capacity_)
 
     def predict(self, X: ArrayLike) -> np.ndarray:
         """Predict binary labels using the fitted threshold."""

@@ -91,7 +91,5 @@ class CvxpyOptimizer(OptimizerBackend[CvxpyOptimizationProblem]):
             diagnostics={
                 "solve_time": getattr(stats, "solve_time", None),
                 "setup_time": getattr(stats, "setup_time", None),
-                "extra_stats": getattr(stats, "extra_stats", None),
-                "problem": cvx_problem,
             },
         )
