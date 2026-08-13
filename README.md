@@ -112,7 +112,9 @@ For an intentionally sparse capacity whose keys omit some variables, pass
 The available estimators are:
 
 - `ChoquetRegressor` for continuous targets.
-- `ChoquetClassifier` for direct threshold classification.
+- `ChoquetClassifier` for deterministic threshold classification. It can learn
+  non-negative feature scales jointly with the capacity and exposes margins
+  through `decision_function()`; it intentionally has no `predict_proba()`.
 - `ChoquisticRegression` for probabilistic binary classification.
 - `ChoquetAutoRegressor` for nonlinear autoregressive forecasting.
 - `ChoquetNeuralRegressor` and `ChoquetNeuralClassifier` for models with a

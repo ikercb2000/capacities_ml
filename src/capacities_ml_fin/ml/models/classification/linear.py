@@ -12,7 +12,9 @@ from sklearn.utils.validation import check_is_fitted, column_or_1d, validate_dat
 from capacities_ml_fin.base.integrals.batch_integrals import batch_choquet_integral
 from capacities_ml_fin.ml.models.classification.utils import (
     linear_classifier,
-    threshold_predictions,
+    normalized_feature_scales,
+    scaled_linear_classifier,
+    validate_unit_interval,
 )
 from capacities_ml_fin.ml.models.utils import capacity_design, fitted_universe
 from capacities_ml_fin.ml.optimization import (
@@ -29,7 +31,13 @@ from capacities_ml_fin.ml.optimization.sparsity import CapacitySparsity
 
 # Choquet linear classifier
 class ChoquetClassifier(ClassifierMixin, BaseEstimator):
-    """Scikit-learn compatible threshold Choquet classifier."""
+    """Deterministic threshold classifier with monotone Choquet projection.
+
+    When ``learn_feature_scales=True``, non-negative feature scales are fitted
+    jointly with the capacity and normalized so their maximum equals one.
+    Inputs must be commensurable criteria in ``[0, 1]`` whose direction has
+    already been oriented so that larger values favor the positive class.
+    """
 
     def __init__(
         self,
@@ -37,14 +45,16 @@ class ChoquetClassifier(ClassifierMixin, BaseEstimator):
         solver: Solver = Solver.PYMOO,
         solver_options: dict[str, Any] | None = None,
         penalty: Any = None,
+        learn_feature_scales: bool = True,
     ) -> None:
         self.sparsity = sparsity
         self.solver = solver
         self.solver_options = solver_options
         self.penalty = penalty
+        self.learn_feature_scales = learn_feature_scales
 
     def fit(self, X: ArrayLike, y: ArrayLike) -> "ChoquetClassifier":
-        """Fit the capacity and the classification threshold."""
+        """Fit the capacity, optional feature scales and decision threshold."""
         # input and binary-label validation
         matrix, raw_target = validate_data(
             self,
@@ -55,6 +65,7 @@ class ChoquetClassifier(ClassifierMixin, BaseEstimator):
             ensure_min_samples=1,
         )
         self.universe_ = fitted_universe(self)
+        matrix = validate_unit_interval(matrix)
         raw_target = column_or_1d(raw_target, warn=True)
         if raw_target.shape != (matrix.shape[0],):
             raise ValueError("y must contain one label per observation.")
@@ -64,6 +75,8 @@ class ChoquetClassifier(ClassifierMixin, BaseEstimator):
             raise ValueError("y must contain exactly two distinct labels.")
         if not isinstance(self.solver, Solver):
             raise TypeError("solver must be a Solver enum member.")
+        if not isinstance(self.learn_feature_scales, (bool, np.bool_)):
+            raise TypeError("learn_feature_scales must be boolean.")
 
         # capacity design and threshold initialization
         sparsity = self.sparsity if self.sparsity is not None else FullCapacity()
@@ -77,19 +90,45 @@ class ChoquetClassifier(ClassifierMixin, BaseEstimator):
         threshold_initial = float(
             np.clip(np.median(design @ capacity_initial), 0.0, 1.0)
         )
-        layout = ParameterLayout(
-            ParameterBlock("capacity", compilation.bundle.n_parameters),
-            ParameterBlock("threshold", 1, lower=0.0, upper=1.0),
-        )
+        blocks = [
+            ParameterBlock("capacity", compilation.bundle.n_parameters)
+        ]
+        if self.learn_feature_scales:
+            blocks.append(
+                ParameterBlock(
+                    "feature_scales",
+                    self.universe_.n_elements,
+                    lower=1e-8,
+                    upper=1.0,
+                )
+            )
+        blocks.append(ParameterBlock("threshold", 1, lower=0.0, upper=1.0))
+        layout = ParameterLayout(*blocks)
         capacity_slice = layout.slice("capacity")
         threshold_slice = layout.slice("threshold")
 
-        classifier = partial(
-            linear_classifier,
-            design=design,
-            capacity_slice=capacity_slice,
-            threshold_slice=threshold_slice,
-        )
+        initial_parts = [capacity_initial]
+        if self.learn_feature_scales:
+            feature_scales_slice = layout.slice("feature_scales")
+            initial_parts.append(np.ones(self.universe_.n_elements, dtype=float))
+            classifier = partial(
+                scaled_linear_classifier,
+                matrix=matrix,
+                parameter_masks=compilation.bundle.parameter_masks,
+                representation=compilation.bundle.representation,
+                capacity_slice=capacity_slice,
+                feature_scales_slice=feature_scales_slice,
+                threshold_slice=threshold_slice,
+            )
+        else:
+            feature_scales_slice = None
+            classifier = partial(
+                linear_classifier,
+                design=design,
+                capacity_slice=capacity_slice,
+                threshold_slice=threshold_slice,
+            )
+        initial_parts.append(np.array([threshold_initial]))
 
         # direct 0-1 loss optimization
         objective = ZeroOneLossObjective(
@@ -102,9 +141,7 @@ class ChoquetClassifier(ClassifierMixin, BaseEstimator):
             objective=objective,
             sparsity=sparsity,
             parameter_layout=layout,
-            initial_parameters=np.concatenate(
-                [capacity_initial, np.array([threshold_initial])]
-            ),
+            initial_parameters=np.concatenate(initial_parts),
             name="choquet_linear_classifier",
         )
         options = {} if self.solver_options is None else dict(self.solver_options)
@@ -115,31 +152,34 @@ class ChoquetClassifier(ClassifierMixin, BaseEstimator):
         self.result_ = result
         self.capacity_ = problem.decode_result(result)
         self.threshold_ = float(result.parameters[threshold_slice][0])
+        self.feature_scales_ = (
+            normalized_feature_scales(result.parameters[feature_scales_slice])
+            if feature_scales_slice is not None
+            else np.ones(self.universe_.n_elements, dtype=float)
+        )
         self.classes_ = label_encoder.classes_
         self.n_classes_ = self.classes_.size
         self.sparsity_ = sparsity
         return self
 
     def decision_function(self, X: ArrayLike) -> np.ndarray:
-        """Return Choquet scores before thresholding."""
-        check_is_fitted(self, ["capacity_", "threshold_"])
+        """Return signed margins relative to the learned decision threshold."""
+        return self.choquet_score(X) - self.threshold_
+
+    def choquet_score(self, X: ArrayLike) -> np.ndarray:
+        """Return the Choquet projection before thresholding."""
+        check_is_fitted(self, ["capacity_", "threshold_", "feature_scales_"])
         matrix = validate_data(self, X, reset=False, dtype=float)
-        return batch_choquet_integral(matrix, self.capacity_)
+        matrix = validate_unit_interval(matrix)
+        return batch_choquet_integral(
+            matrix * self.feature_scales_,
+            self.capacity_,
+        )
 
     def predict(self, X: ArrayLike) -> np.ndarray:
         """Predict binary labels using the fitted threshold."""
-        scores = self.decision_function(X)
-        encoded_predictions = threshold_predictions(scores, self.threshold_)
+        encoded_predictions = (self.decision_function(X) >= 0.0).astype(int)
         return self.classes_[encoded_predictions]
-
-    def predict_proba(self, X: ArrayLike) -> np.ndarray:
-        """Return deterministic class probabilities induced by the threshold."""
-        predictions = self.predict(X)
-        encoded_predictions = np.searchsorted(self.classes_, predictions)
-        probabilities = np.zeros((predictions.size, 2), dtype=float)
-        probabilities[:, 1] = encoded_predictions
-        probabilities[:, 0] = 1.0 - encoded_predictions
-        return probabilities
 
     def get_feature_names_out(self, input_features: ArrayLike | None = None) -> np.ndarray:
         """Return the feature names used by the fitted estimator."""
