@@ -6,21 +6,21 @@ from typing import TypeAlias
 import numpy as np
 
 # modules
-from capacities_ml.capacities import Capacity
+from capacities_ml.capacities import ExplicitCapacity
 from capacities_ml.capacities.utils import normalize_coalition
 from capacities_ml.mobius import MobiusRepresentation, mobius_transform
 
 # interpretation aliases
-CapacityLike: TypeAlias = Capacity | MobiusRepresentation
+CapacityLike: TypeAlias = ExplicitCapacity | MobiusRepresentation
 
 
 # representation conversion
 def _as_mobius(capacity: CapacityLike) -> MobiusRepresentation:
     if isinstance(capacity, MobiusRepresentation):
         return capacity
-    if isinstance(capacity, Capacity):
+    if isinstance(capacity, ExplicitCapacity):
         return mobius_transform(capacity)
-    raise TypeError("Expected a Capacity or MobiusRepresentation.")
+    raise TypeError("Expected an ExplicitCapacity or MobiusRepresentation.")
 
 
 # mobius terms

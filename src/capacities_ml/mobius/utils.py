@@ -3,7 +3,7 @@ from collections.abc import Set
 from itertools import combinations
 
 # modules
-from capacities_ml.capacities.capacities import Capacity
+from capacities_ml.capacities.capacities import ExplicitCapacity
 from capacities_ml.capacities.types import CapacityMap, CoalitionValue
 from capacities_ml.mobius.mobius import MobiusRepresentation
 from capacities_ml.mobius.types import MobiusMap
@@ -43,10 +43,10 @@ def _mobius_transform_map(capacities: CapacityMap) -> MobiusMap:
 
 
 # mobius transform
-def mobius_transform(capacity: Capacity) -> MobiusRepresentation:
+def mobius_transform(capacity: ExplicitCapacity) -> MobiusRepresentation:
     """Compute the Möbius representation of a capacity."""
-    if not isinstance(capacity, Capacity):
-        raise TypeError("capacity must be a Capacity instance.")
+    if not isinstance(capacity, ExplicitCapacity):
+        raise TypeError("capacity must be an ExplicitCapacity instance.")
 
     coefficient_map = _mobius_transform_map(capacity.values)
     return MobiusRepresentation(
@@ -56,7 +56,7 @@ def mobius_transform(capacity: Capacity) -> MobiusRepresentation:
 
 
 # inverse mobius transform
-def inverse_mobius_transform(mobius_rep: MobiusRepresentation) -> Capacity:
+def inverse_mobius_transform(mobius_rep: MobiusRepresentation) -> ExplicitCapacity:
     """Compute a capacity from its Möbius representation."""
     if not isinstance(mobius_rep, MobiusRepresentation):
         raise TypeError("mobius_rep must be a MobiusRepresentation instance.")
@@ -70,4 +70,4 @@ def inverse_mobius_transform(mobius_rep: MobiusRepresentation) -> Capacity:
                 for subset in powerset(coalition)
             )
 
-    return Capacity(universe=mobius_rep.universe, values=values)
+    return ExplicitCapacity(universe=mobius_rep.universe, values=values)

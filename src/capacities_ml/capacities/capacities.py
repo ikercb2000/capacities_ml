@@ -41,9 +41,9 @@ class VariableUniverse:
         }
 
 
-# capacity class
+# explicit capacity class
 @dataclass
-class Capacity(BaseCapacity):
+class ExplicitCapacity(BaseCapacity):
     """A normalized monotone set function over a fixed feature set."""
 
     universe: VariableUniverse

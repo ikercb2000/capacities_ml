@@ -3,7 +3,7 @@ from collections.abc import Sequence, Set
 import numpy as np
 
 # modules
-from capacities_ml.capacities import BaseCapacity, Capacity
+from capacities_ml.capacities import BaseCapacity, ExplicitCapacity
 from capacities_ml.integrals.choquet import ordered_choquet
 from capacities_ml.mobius import MobiusRepresentation
 from capacities_ml.integrals.utils import (
@@ -52,7 +52,7 @@ def batch_choquet_integral(X: np.ndarray, capacity: BaseCapacity) -> np.ndarray:
             f"The capacity expects {capacity.n_elements} elements, but X has {n_features}."
         )
 
-    if isinstance(capacity, Capacity):
+    if isinstance(capacity, ExplicitCapacity):
         values_by_mask = capacity_values_by_mask(capacity)
         return capacity_design_matrix(matrix) @ values_by_mask
     return np.asarray([ordered_choquet(capacity, row) for row in matrix])

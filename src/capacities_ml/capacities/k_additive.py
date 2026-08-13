@@ -4,13 +4,13 @@ from dataclasses import dataclass
 from itertools import combinations
 
 # modules
-from capacities_ml.capacities.capacities import Capacity, VariableUniverse
+from capacities_ml.capacities.capacities import ExplicitCapacity, VariableUniverse
 from capacities_ml.capacities.utils import CoalitionInput, normalize_coalition
 from capacities_ml.capacities.validation import check_k_additivity
 
 # k-Additive capacity dataclass
 @dataclass
-class KAdditiveCapacity(Capacity):
+class KAdditiveCapacity(ExplicitCapacity):
     k: int
 
     def __post_init__(self, values: Mapping[CoalitionInput, float]) -> None:

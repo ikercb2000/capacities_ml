@@ -4,7 +4,7 @@ from collections.abc import Set
 import numpy as np
 
 # modules
-from capacities_ml.capacities.capacities import Capacity
+from capacities_ml.capacities.capacities import ExplicitCapacity
 from capacities_ml.capacities.utils import subset_encoding
 from capacities_ml.mobius import MobiusRepresentation
 
@@ -37,7 +37,7 @@ def as_matrix(X: np.ndarray) -> np.ndarray:
 
 
 # capacity values by bitmask
-def capacity_values_by_mask(capacity: Capacity) -> np.ndarray:
+def capacity_values_by_mask(capacity: ExplicitCapacity) -> np.ndarray:
     """
     Return the capacity values indexed by subset bitmasks.
     """
