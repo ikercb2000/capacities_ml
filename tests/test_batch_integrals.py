@@ -1,19 +1,19 @@
 import numpy as np
 import pytest
 
-from capacities_ml.capacities import (
+from capacities_ml_fin.base.capacities import (
     ExplicitCapacity,
     VariableUniverse,
     mobius_transform,
 )
-from capacities_ml.integrals.batch_integrals import (
+from capacities_ml_fin.base.integrals.batch_integrals import (
     batch_choquet_integral,
     batch_choquet_integral_mobius,
     mobius_design_matrix,
 )
-from capacities_ml.integrals.choquet import mobius_choquet, ordered_choquet
-from capacities_ml.integrals.utils import coalition_indices
-from capacities_ml.risk import ProbabilityCapacity
+from capacities_ml_fin.base.integrals.choquet import mobius_choquet, ordered_choquet
+from capacities_ml_fin.base.integrals.utils import coalition_indices
+from capacities_ml_fin.risk import ProbabilityCapacity
 
 
 def build_capacity() -> ExplicitCapacity:

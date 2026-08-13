@@ -2,10 +2,10 @@ import numpy as np
 import pytest
 from sklearn.base import clone
 
-from capacities_ml.capacities import VariableUniverse
-from capacities_ml.integrals.batch_integrals import batch_choquet_integral_mobius
-from capacities_ml.models import ChoquisticRegression
-from capacities_ml.optimization import CapacityRepresentation, L2Penalty
+from capacities_ml_fin.base.capacities import VariableUniverse
+from capacities_ml_fin.base.integrals.batch_integrals import batch_choquet_integral_mobius
+from capacities_ml_fin.ml.models import ChoquisticRegression
+from capacities_ml_fin.ml.optimization import CapacityRepresentation, L2Penalty
 
 
 def test_choquistic_regression_is_probabilistic_and_cloneable(

@@ -1,7 +1,7 @@
 import numpy as np
 
-from capacities_ml.capacities import VariableUniverse
-from capacities_ml.models import ChoquetNeuralClassifier
+from capacities_ml_fin.base.capacities import VariableUniverse
+from capacities_ml_fin.ml.models import ChoquetNeuralClassifier
 
 
 def test_choquet_neural_classifier_returns_calibrated_shape_and_labels(

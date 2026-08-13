@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from capacities_ml.capacities import validate_capacity
-from capacities_ml.risk import (
+from capacities_ml_fin.base.capacities import validate_capacity
+from capacities_ml_fin.risk import (
     DistortedCapacity,
     EmpiricalLossDistribution,
     ExpectedShortfallDistortion,

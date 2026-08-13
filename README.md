@@ -1,6 +1,6 @@
-# capacities_ml
+# capacities_ml_fin
 
-`capacities_ml` is a Python package for working with capacities, Choquet integrals,
+`capacities_ml_fin` is a Python package for working with capacities, Choquet integrals,
 capacity-based machine-learning models, and non-additive risk measures.
 
 The package provides the complete workflow around these objects: defining and
@@ -23,8 +23,8 @@ financial loss distributions.
 
 ## Installation
 
-The project requires Python 3.12 or later. From the repository root, install the
-package and its dependencies with Poetry:
+The project requires Python 3.12 or later. Install the package and its development
+environment from the repository root with Poetry:
 
 ```powershell
 poetry install
@@ -37,6 +37,15 @@ poetry run python your_script.py
 poetry run pytest
 ```
 
+The local project can also be installed with pip:
+
+```powershell
+pip install .
+```
+
+Once published, the distribution can be installed from PyPI with
+`pip install capacities_ml_fin`.
+
 ## Capacities and Choquet integrals
 
 A capacity assigns a value to each coalition of variables. Unlike a probability
@@ -46,8 +55,8 @@ complementarity and redundancy between variables.
 ```python
 import numpy as np
 
-from capacities_ml.capacities import MobiusCapacity, VariableUniverse
-from capacities_ml.integrals.choquet import ordered_choquet
+from capacities_ml_fin.base.capacities import MobiusCapacity, VariableUniverse
+from capacities_ml_fin.base.integrals.choquet import ordered_choquet
 
 universe = VariableUniverse(("quality", "cost", "speed"))
 capacity = MobiusCapacity(
@@ -77,10 +86,10 @@ pipelines, cross-validation, metrics, and parameter search.
 ```python
 from sklearn.pipeline import Pipeline
 
-from capacities_ml.capacities import VariableUniverse
-from capacities_ml.models import ChoquetRegressor
-from capacities_ml.optimization import KAdditivity
-from capacities_ml.preprocessing import CapacityNormalizer
+from capacities_ml_fin.base.capacities import VariableUniverse
+from capacities_ml_fin.ml.models import ChoquetRegressor
+from capacities_ml_fin.ml.optimization import KAdditivity
+from capacities_ml_fin.ml.preprocessing import CapacityNormalizer
 
 universe = VariableUniverse(("profitability", "liquidity", "volatility"))
 
@@ -124,7 +133,7 @@ provides grids that can be passed directly to scikit-learn search objects.
 Its interface follows the usual time-series workflow:
 
 ```python
-from capacities_ml.models import ChoquetAutoRegressor
+from capacities_ml_fin.ml.models import ChoquetAutoRegressor
 
 model = ChoquetAutoRegressor(lags=5).fit(y_train)
 forecast, intervals = model.predict(10, return_conf_int=True)
@@ -145,7 +154,7 @@ measures, Kusuoka representations, conditional residual bootstrapping, rolling
 capital estimation, and statistical backtesting.
 
 ```python
-from capacities_ml.risk import (
+from capacities_ml_fin.risk import (
     ExpectedShortfallDistortion,
     RollingRiskEstimator,
     capital_backtest,
@@ -167,16 +176,14 @@ bootstrap, and HAC diagnostics.
 
 ## Package structure
 
-| Module | Purpose |
+| Folder | Contents |
 |---|---|
-| `capacities` | Capacity objects, Möbius transforms, and validation |
-| `integrals` | Ordered, Möbius, and batch Choquet integrals |
-| `models` | Regression, classification, neural, and time-series estimators |
-| `preprocessing` | Scaling and orientation of capacity inputs |
-| `interpretation` | Shapley and interaction indices |
-| `model_selection` | Capacity-complexity parameter grids |
-| `optimization` | Objectives, constraints, penalties, sparsity, and solvers |
-| `risk` | Loss distributions, risk measures, forecasting, and backtesting |
+| `base` | Capacity objects, Möbius transforms, Choquet integrals, validation, and interpretation |
+| `ml` | Models, preprocessing, model selection, regularization, and optimization |
+| `risk` | Loss distributions, distortions, risk measures, forecasting, and backtesting |
+
+These domains are part of the same `capacities_ml_fin` distribution and therefore
+share the same capacity abstractions and release version.
 
 ## Notebooks
 

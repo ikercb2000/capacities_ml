@@ -1,6 +1,6 @@
 import numpy as np
 
-from capacities_ml.risk import (
+from capacities_ml_fin.risk import (
     DistortionRiskMeasure,
     ExpectedShortfallDistortion,
     check_risk_measure_axioms,

@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.base import clone
 
-from capacities_ml.models import ChoquetAutoRegressor
+from capacities_ml_fin.ml.models import ChoquetAutoRegressor
 
 
 def test_choquet_autoregressor_recovers_stable_ar_one_and_pmdarima_api():

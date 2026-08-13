@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from capacities_ml.capacities import (
+from capacities_ml_fin.base.capacities import (
     BaseCapacity,
     ExplicitCapacity,
     MobiusCapacity,
@@ -9,7 +9,7 @@ from capacities_ml.capacities import (
     inverse_mobius_transform,
     mobius_transform,
 )
-from capacities_ml.integrals.choquet import mobius_choquet, ordered_choquet
+from capacities_ml_fin.base.integrals.choquet import mobius_choquet, ordered_choquet
 
 
 def build_capacity() -> ExplicitCapacity:

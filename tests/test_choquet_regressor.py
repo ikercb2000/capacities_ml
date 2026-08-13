@@ -1,8 +1,8 @@
 import numpy as np
 
-from capacities_ml.capacities import VariableUniverse
-from capacities_ml.models import ChoquetRegressor
-from capacities_ml.optimization import L2Penalty, Solver
+from capacities_ml_fin.base.capacities import VariableUniverse
+from capacities_ml_fin.ml.models import ChoquetRegressor
+from capacities_ml_fin.ml.optimization import L2Penalty, Solver
 
 
 def test_choquet_regressor_fits_capacity_and_intercept_with_cvxpy():

@@ -1,9 +1,9 @@
-from capacities_ml.capacities import (
+from capacities_ml_fin.base.capacities import (
     is_concave_capacity,
     is_convex_capacity,
     validate_capacity,
 )
-from capacities_ml.risk import (
+from capacities_ml_fin.risk import (
     DistortedCapacity,
     ProbabilityCapacity,
     ProportionalHazardsDistortion,

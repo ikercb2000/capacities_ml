@@ -1,8 +1,8 @@
 import numpy as np
 from sklearn.base import clone
 
-from capacities_ml.capacities import VariableUniverse
-from capacities_ml.models import ChoquetNeuralRegressor
+from capacities_ml_fin.base.capacities import VariableUniverse
+from capacities_ml_fin.ml.models import ChoquetNeuralRegressor
 
 
 def test_choquet_neural_regressor_learns_valid_hidden_capacities(

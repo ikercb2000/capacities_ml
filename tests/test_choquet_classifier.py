@@ -1,8 +1,8 @@
 import numpy as np
 
-from capacities_ml.capacities import VariableUniverse
-from capacities_ml.models import ChoquetClassifier
-from capacities_ml.optimization import L1Penalty, Solver
+from capacities_ml_fin.base.capacities import VariableUniverse
+from capacities_ml_fin.ml.models import ChoquetClassifier
+from capacities_ml_fin.ml.optimization import L1Penalty, Solver
 
 
 def test_choquet_classifier_optimizes_capacity_and_threshold():

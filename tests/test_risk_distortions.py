@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from capacities_ml.risk import (
+from capacities_ml_fin.risk import (
     CustomDistortion,
     ExpectedShortfallDistortion,
     IdentityDistortion,

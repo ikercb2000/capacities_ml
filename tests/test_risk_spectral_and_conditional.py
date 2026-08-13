@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from sklearn.linear_model import LinearRegression
 
-from capacities_ml.risk import (
+from capacities_ml_fin.risk import (
     KusuokaRiskMeasure,
     ResidualBootstrapDistribution,
     SpectralRiskMeasure,

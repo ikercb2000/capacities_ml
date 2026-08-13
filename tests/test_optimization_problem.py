@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from capacities_ml.capacities import MobiusCapacity, VariableUniverse
-from capacities_ml.optimization import (
+from capacities_ml_fin.base.capacities import MobiusCapacity, VariableUniverse
+from capacities_ml_fin.ml.optimization import (
     CapacityRepresentation,
     ConstraintBundle,
     KAdditivity,
@@ -13,8 +13,8 @@ from capacities_ml.optimization import (
     Problem,
     Solver,
 )
-from capacities_ml.optimization.constraints import VariableBounds
-from capacities_ml.optimization.objectives import SquaredErrorObjective
+from capacities_ml_fin.ml.optimization.constraints import VariableBounds
+from capacities_ml_fin.ml.optimization.objectives import SquaredErrorObjective
 
 
 def test_capacity_problem_decodes_optimized_values():

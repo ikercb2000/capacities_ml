@@ -2,8 +2,8 @@
 import pytest
 
 # modules
-from capacities_ml.capacities.types import CapacityMap, CoalitionValue
-from capacities_ml.capacities.validation import check_k_additivity, check_monotonicity
+from capacities_ml_fin.base.capacities.types import CapacityMap, CoalitionValue
+from capacities_ml_fin.base.capacities.validation import check_k_additivity, check_monotonicity
 
 
 def test_accepts_a_monotone_capacity():

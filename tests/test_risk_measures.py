@@ -1,13 +1,13 @@
 import numpy as np
 import pytest
 
-from capacities_ml.capacities import (
+from capacities_ml_fin.base.capacities import (
     ExplicitCapacity,
     MobiusCapacity,
     VariableUniverse,
 )
-from capacities_ml.integrals.choquet import ordered_choquet
-from capacities_ml.risk import (
+from capacities_ml_fin.base.integrals.choquet import ordered_choquet
+from capacities_ml_fin.risk import (
     DistortionRiskMeasure,
     ExpectedShortfallDistortion,
     IdentityDistortion,

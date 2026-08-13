@@ -1,7 +1,7 @@
 import numpy as np
 
-from capacities_ml.capacities import MobiusCapacity, VariableUniverse
-from capacities_ml.interpretation import (
+from capacities_ml_fin.base.capacities import MobiusCapacity, VariableUniverse
+from capacities_ml_fin.base.interpretation import (
     interaction_signs,
     pairwise_interaction_index,
     pairwise_interaction_matrix,
@@ -9,16 +9,16 @@ from capacities_ml.interpretation import (
     shapley_index,
     shapley_indices,
 )
-from capacities_ml.model_selection import (
+from capacities_ml_fin.ml.model_selection import (
     capacity_parameter_grid,
     capacity_shape_grid,
     interaction_order_grid,
 )
-from capacities_ml.optimization import (
+from capacities_ml_fin.ml.optimization import (
     CapacityShape,
     PairwiseInteractionSparsity,
 )
-from capacities_ml.risk import ProbabilityCapacity
+from capacities_ml_fin.risk import ProbabilityCapacity
 
 
 def test_shapley_and_pairwise_interaction_indices_use_mobius_coefficients():

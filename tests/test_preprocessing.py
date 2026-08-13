@@ -1,7 +1,7 @@
 import numpy as np
 import polars as pl
 
-from capacities_ml.preprocessing import CapacityNormalizer
+from capacities_ml_fin.ml.preprocessing import CapacityNormalizer
 
 
 def test_capacity_normalizer_scales_and_reverses_cost_features():

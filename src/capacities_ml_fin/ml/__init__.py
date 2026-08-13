@@ -1,0 +1,19 @@
+"""Choquet machine-learning models and supporting tools."""
+
+from capacities_ml_fin.ml.models import (
+    ChoquetAutoRegressor,
+    ChoquetClassifier,
+    ChoquetNeuralClassifier,
+    ChoquetNeuralRegressor,
+    ChoquetRegressor,
+    ChoquisticRegression,
+)
+
+__all__ = [
+    "ChoquetAutoRegressor",
+    "ChoquetClassifier",
+    "ChoquetNeuralClassifier",
+    "ChoquetNeuralRegressor",
+    "ChoquetRegressor",
+    "ChoquisticRegression",
+]
