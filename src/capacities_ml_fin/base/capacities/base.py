@@ -9,7 +9,27 @@ from capacities_ml_fin.base.capacities.utils import _order_permutation
 
 # common capacity base class
 class BaseCapacity(ABC):
-    """Common interface for explicit and dynamically evaluated capacities."""
+    """Common interface for immutable capacity objects."""
+
+    _capacity_frozen = False
+
+    def __setattr__(self, name: str, value: object) -> None:
+        if getattr(self, "_capacity_frozen", False):
+            raise AttributeError(
+                f"{type(self).__name__} is immutable; create a new capacity instead."
+            )
+        object.__setattr__(self, name, value)
+
+    def __delattr__(self, name: str) -> None:
+        if getattr(self, "_capacity_frozen", False):
+            raise AttributeError(
+                f"{type(self).__name__} is immutable; create a new capacity instead."
+            )
+        object.__delattr__(self, name)
+
+    def _freeze(self) -> None:
+        """Prevent changes after successful construction and validation."""
+        object.__setattr__(self, "_capacity_frozen", True)
 
     @property
     @abstractmethod

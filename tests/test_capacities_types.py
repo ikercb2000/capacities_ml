@@ -11,14 +11,13 @@ from capacities_ml_fin.base.capacities import mobius_transform
 from capacities_ml_fin.base.capacities.types import CapacityMap, CoalitionValue, MobiusMap
 
 
-def test_coalition_value_normalizes_to_frozenset():
+def test_coalition_value_normalizes_to_frozenset_and_is_immutable():
     coalition_value = CoalitionValue({0, 1}, 0.7)
 
     assert coalition_value.coalition == frozenset({0, 1})
 
-    coalition_value.value = 0.8
-
-    assert coalition_value.value == 0.8
+    with pytest.raises(AttributeError):
+        coalition_value.value = 0.8
 
 
 def test_get_value_uses_internal_lookup():
@@ -61,7 +60,7 @@ def test_capacity_validates_automatically_on_construction():
         )
 
 
-def test_capacity_and_its_internal_map_are_mutable():
+def test_capacity_and_its_internal_map_are_immutable():
     capacity = ExplicitCapacity(
         universe=VariableUniverse(("x0", "x1")),
         values={
@@ -71,23 +70,29 @@ def test_capacity_and_its_internal_map_are_mutable():
         },
     )
 
-    capacity.universe = VariableUniverse(("x0", "x1", "x2"))
-    capacity.values.set_value({0}, 0.9)
+    with pytest.raises(AttributeError, match="immutable"):
+        capacity.universe = VariableUniverse(("x0", "x1", "x2"))
+    with pytest.raises(AttributeError, match="immutable"):
+        capacity.values.set_value({0}, 0.9)
+    with pytest.raises(TypeError):
+        capacity.values.lookup_dict[frozenset({0})] = 0.9
 
-    assert capacity.universe.n_elements == 3
-    assert capacity.value({0}) == 0.9
+    assert capacity.universe.n_elements == 2
+    assert capacity.value({0}) == 0.2
 
 
-def test_mobius_map_is_mutable():
+def test_mobius_map_is_immutable():
     coefficients = MobiusMap(
         mobius_coefficients=[CoalitionValue({0}, 0.2)]
     )
 
-    coefficients.set_value({0}, 0.4)
-    coefficients.set_value({0, 1}, 0.3)
+    with pytest.raises(AttributeError, match="immutable"):
+        coefficients.set_value({0}, 0.4)
+    with pytest.raises(TypeError):
+        coefficients.lookup_dict[frozenset({0})] = 0.4
 
-    assert coefficients.get_value({0}) == 0.4
-    assert coefficients.get_value({0, 1}) == 0.3
+    assert coefficients.get_value({0}) == 0.2
+    assert coefficients.get_value({0, 1}) is None
 
 
 def test_variable_universe_derives_cardinality_from_names():
@@ -113,16 +118,18 @@ def test_variable_universe_can_be_inferred_from_size_and_coalitions():
     assert by_names.var_names == ("quality", "price")
 
 
-def test_variable_universe_allows_mutation():
+def test_variable_universe_is_immutable():
     universe = VariableUniverse(("price", "quality", "risk"))
 
-    universe.var_names = ("price", "quality")
-    universe.n_elements = 2
-    universe.name_to_index["extra"] = 3
+    with pytest.raises(AttributeError):
+        universe.var_names = ("price", "quality")
+    with pytest.raises(AttributeError):
+        universe.n_elements = 2
+    with pytest.raises(TypeError):
+        universe.name_to_index["extra"] = 3
 
-    assert universe.var_names == ("price", "quality")
-    assert universe.n_elements == 2
-    assert universe.name_to_index["extra"] == 3
+    assert universe.var_names == ("price", "quality", "risk")
+    assert universe.n_elements == 3
 
 
 def test_capacity_supports_user_friendly_access():

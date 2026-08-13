@@ -12,4 +12,11 @@ def _probability_weights(weights: ArrayLike) -> np.ndarray:
     total = float(np.sum(values))
     if total <= 0.0:
         raise ValueError("weights must have a positive sum.")
-    return values / total
+    return _immutable_array(values / total)
+
+
+# immutable numerical storage
+def _immutable_array(values: ArrayLike) -> np.ndarray:
+    """Copy numerical values into an immutable bytes-backed array."""
+    array = np.ascontiguousarray(values, dtype=float)
+    return np.frombuffer(array.tobytes(), dtype=array.dtype).reshape(array.shape)

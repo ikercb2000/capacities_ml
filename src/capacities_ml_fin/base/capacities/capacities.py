@@ -2,6 +2,7 @@
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from numbers import Integral
+from types import MappingProxyType
 import numpy as np
 from numpy.typing import ArrayLike
 
@@ -17,18 +18,18 @@ from capacities_ml_fin.base.capacities.utils import (
 from capacities_ml_fin.base.capacities.validation import check_monotonicity
 
 # variable universe class
-@dataclass
+@dataclass(frozen=True, slots=True)
 class VariableUniverse:
     """Names and index mapping inferred or supplied for a capacity."""
 
     var_names: Iterable[str]
     n_elements: int = field(init=False)
-    name_to_index: dict[str, int] = field(init=False, repr=False)
+    name_to_index: Mapping[str, int] = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
         var_names = tuple(self.var_names)
-        self.var_names = var_names
-        self.n_elements = len(var_names)
+        object.__setattr__(self, "var_names", var_names)
+        object.__setattr__(self, "n_elements", len(var_names))
 
         if self.n_elements < 1:
             raise ValueError("var_names must contain at least one variable.")
@@ -37,9 +38,17 @@ class VariableUniverse:
         if len(set(var_names)) != self.n_elements:
             raise ValueError("var_names must be unique.")
 
-        self.name_to_index = {
-            name: index for index, name in enumerate(var_names)
-        }
+        object.__setattr__(
+            self,
+            "name_to_index",
+            MappingProxyType(
+                {name: index for index, name in enumerate(var_names)}
+            ),
+        )
+
+    def __reduce__(self) -> tuple[object, tuple[tuple[str, ...]]]:
+        """Reconstruct without serializing the read-only mapping proxy."""
+        return type(self), (tuple(self.var_names),)
 
     @classmethod
     def from_size(cls, n_elements: int) -> "VariableUniverse":
@@ -150,6 +159,7 @@ class ExplicitCapacity(BaseCapacity):
             ]
         )
         self.validate()
+        self._freeze()
 
     @property
     def var_names(self) -> tuple[str, ...]:

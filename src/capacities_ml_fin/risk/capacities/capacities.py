@@ -8,7 +8,10 @@ from numpy.typing import ArrayLike
 from capacities_ml_fin.base.capacities import BaseCapacity
 from capacities_ml_fin.base.capacities.utils import _event_mask, _order_permutation
 from capacities_ml_fin.risk.distortions import Distortion
-from capacities_ml_fin.risk.capacities.utils import _probability_weights
+from capacities_ml_fin.risk.capacities.utils import (
+    _immutable_array,
+    _probability_weights,
+)
 
 
 # probability capacity
@@ -20,6 +23,11 @@ class ProbabilityCapacity(BaseCapacity):
 
     def __post_init__(self) -> None:
         self.weights = _probability_weights(self.weights)
+        self._freeze()
+
+    def __reduce__(self) -> tuple[object, tuple[np.ndarray]]:
+        """Reconstruct through the validating public constructor."""
+        return type(self), (self.weights.copy(),)
 
     @property
     def n_elements(self) -> int:
@@ -48,6 +56,11 @@ class DistortedCapacity(BaseCapacity):
             raise TypeError("base_capacity must be a BaseCapacity instance.")
         if not isinstance(self.distortion, Distortion):
             raise TypeError("distortion must be a Distortion instance.")
+        self._freeze()
+
+    def __reduce__(self) -> tuple[object, tuple[BaseCapacity, Distortion]]:
+        """Reconstruct through the validating public constructor."""
+        return type(self), (self.base_capacity, self.distortion)
 
     @property
     def n_elements(self) -> int:
@@ -72,7 +85,14 @@ class UpperEnvelopeCapacity(BaseCapacity):
         priors = np.asarray(self.prior_weights, dtype=float)
         if priors.ndim != 2 or priors.shape[0] == 0 or priors.shape[1] == 0:
             raise ValueError("prior_weights must be a non-empty two-dimensional array.")
-        self.prior_weights = np.vstack([_probability_weights(row) for row in priors])
+        self.prior_weights = _immutable_array(
+            np.vstack([_probability_weights(row) for row in priors])
+        )
+        self._freeze()
+
+    def __reduce__(self) -> tuple[object, tuple[np.ndarray]]:
+        """Reconstruct through the validating public constructor."""
+        return type(self), (self.prior_weights.copy(),)
 
     @property
     def n_elements(self) -> int:
@@ -100,7 +120,14 @@ class LowerEnvelopeCapacity(BaseCapacity):
         priors = np.asarray(self.prior_weights, dtype=float)
         if priors.ndim != 2 or priors.shape[0] == 0 or priors.shape[1] == 0:
             raise ValueError("prior_weights must be a non-empty two-dimensional array.")
-        self.prior_weights = np.vstack([_probability_weights(row) for row in priors])
+        self.prior_weights = _immutable_array(
+            np.vstack([_probability_weights(row) for row in priors])
+        )
+        self._freeze()
+
+    def __reduce__(self) -> tuple[object, tuple[np.ndarray]]:
+        """Reconstruct through the validating public constructor."""
+        return type(self), (self.prior_weights.copy(),)
 
     @property
     def n_elements(self) -> int:

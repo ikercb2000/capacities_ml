@@ -53,6 +53,7 @@ class MobiusCapacity(BaseCapacity):
             ]
         )
         self.validate()
+        self._freeze()
 
     @property
     def var_names(self) -> tuple[str, ...]:

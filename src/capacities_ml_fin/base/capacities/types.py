@@ -1,6 +1,7 @@
 # imports
 from collections.abc import Iterable, Iterator, Mapping, Set
 from dataclasses import InitVar, dataclass, field
+from types import MappingProxyType
 from typing import Protocol
 
 # variable universe protocol
@@ -10,22 +11,22 @@ class VariableUniverseLike(Protocol):
     name_to_index: Mapping[str, int]
 
 # coalition value
-@dataclass
+@dataclass(frozen=True, slots=True)
 class CoalitionValue:
     coalition: frozenset[int]
     value: float
 
     def __post_init__(self) -> None:
-        self.coalition = frozenset(self.coalition)
-        self.value = float(self.value)
+        object.__setattr__(self, "coalition", frozenset(self.coalition))
+        object.__setattr__(self, "value", float(self.value))
 
     def __str__(self):
         return f"Coalition {set(self.coalition)} with value {self.value}"
 
 # coalition map main class
-@dataclass
+@dataclass(frozen=True, slots=True)
 class CoalitionMap:
-    lookup_dict: dict[frozenset[int], float] = field(init=False, repr=False)
+    lookup_dict: Mapping[frozenset[int], float] = field(init=False, repr=False)
 
     def __len__(self) -> int:
         return sum(1 for _ in self)
@@ -53,10 +54,14 @@ class CoalitionMap:
         return self.lookup_dict.get(frozenset(subset))
 
     def set_value(self, coalition: Set[int], value: float) -> None:
-        self.lookup_dict[frozenset(coalition)] = float(value)
+        raise AttributeError(
+            f"{type(self).__name__} is immutable; create a new map instead."
+        )
 
     def remove_value(self, coalition: Set[int]) -> None:
-        del self.lookup_dict[frozenset(coalition)]
+        raise AttributeError(
+            f"{type(self).__name__} is immutable; create a new map instead."
+        )
 
     def get_coalition(self, value: float) -> list[frozenset[int]]:
         return [
@@ -67,14 +72,14 @@ class CoalitionMap:
 
 
 # capacity mapping
-@dataclass
+@dataclass(frozen=True, slots=True)
 class CapacityMap(CoalitionMap):
-    """Mutable, unvalidated tabular values of a set function."""
+    """Immutable, unvalidated tabular values of a set function."""
 
     capacities: InitVar[Iterable[CoalitionValue]]
 
     def __post_init__(self, capacities: Iterable[CoalitionValue]) -> None:
-        self.lookup_dict = {frozenset(): 0.0}
+        lookup = {frozenset(): 0.0}
 
         for coalition_value in capacities:
             coalition = coalition_value.coalition
@@ -84,10 +89,12 @@ class CapacityMap(CoalitionMap):
                     "The empty coalition must not be included explicitly; its value is assumed to be zero."
                 )
 
-            if coalition in self.lookup_dict:
+            if coalition in lookup:
                 raise ValueError(f"Duplicate coalition found: {set(coalition)}.")
 
-            self.set_value(coalition, coalition_value.value)
+            lookup[coalition] = float(coalition_value.value)
+
+        object.__setattr__(self, "lookup_dict", MappingProxyType(lookup))
 
     def __iter__(self) -> Iterator[CoalitionValue]:
         return (
@@ -96,23 +103,14 @@ class CapacityMap(CoalitionMap):
             if coalition
         )
 
-    def set_value(self, coalition: Set[int], value: float) -> None:
-        frozen_coalition = frozenset(coalition)
-        if not frozen_coalition:
-            raise ValueError("The empty coalition always has value zero.")
-        super().set_value(frozen_coalition, value)
-
-    def remove_value(self, coalition: Set[int]) -> None:
-        frozen_coalition = frozenset(coalition)
-        if not frozen_coalition:
-            raise ValueError("The empty coalition cannot be removed.")
-        super().remove_value(frozen_coalition)
+    def __reduce__(self) -> tuple[object, tuple[tuple[CoalitionValue, ...]]]:
+        return type(self), (self.coalitions,)
 
 
 # Mobius mapping
-@dataclass
+@dataclass(frozen=True, slots=True)
 class MobiusMap(CoalitionMap):
-    """Mutable, potentially sparse Mobius coefficients."""
+    """Immutable, potentially sparse Mobius coefficients."""
 
     mobius_coefficients: InitVar[Iterable[CoalitionValue]]
 
@@ -120,10 +118,15 @@ class MobiusMap(CoalitionMap):
         self,
         mobius_coefficients: Iterable[CoalitionValue],
     ) -> None:
-        self.lookup_dict = {}
+        lookup: dict[frozenset[int], float] = {}
 
         for coalition_value in mobius_coefficients:
             coalition = coalition_value.coalition
-            if coalition in self.lookup_dict:
+            if coalition in lookup:
                 raise ValueError(f"Duplicate coalition found: {set(coalition)}.")
-            self.set_value(coalition, coalition_value.value)
+            lookup[coalition] = float(coalition_value.value)
+
+        object.__setattr__(self, "lookup_dict", MappingProxyType(lookup))
+
+    def __reduce__(self) -> tuple[object, tuple[tuple[CoalitionValue, ...]]]:
+        return type(self), (self.coalitions,)
