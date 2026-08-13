@@ -18,6 +18,7 @@ financial loss distributions.
 - Choquet neural regressors and classifiers.
 - Capacity preprocessing, regularization, and model-selection utilities.
 - SciPy, CVXPY, and PYMOO optimization backends.
+- Point-in-time financial data, return, feature, and portfolio utilities.
 - Distortion, spectral, and generalized risk measures.
 - Conditional and rolling risk forecasts with backtesting tools.
 
@@ -193,6 +194,7 @@ bootstrap, and HAC diagnostics.
 |---|---|
 | `base` | Capacity objects, Möbius transforms, Choquet integrals, validation, and interpretation |
 | `ml` | Models, preprocessing, model selection, regularization, and optimization |
+| `finance` | Point-in-time alignment, returns, market features, and portfolio utilities |
 | `risk` | Loss distributions, distortions, risk measures, forecasting, and backtesting |
 
 These domains are part of the same `capacities_ml_fin` distribution and therefore
@@ -222,7 +224,7 @@ poetry run pytest
 ```
 
 The tests are organized by package component and include capacities, integrals,
-estimators, optimization, preprocessing, interpretation, and risk functionality.
+estimators, optimization, preprocessing, interpretation, finance, and risk functionality.
 
 ## Publishing
 
