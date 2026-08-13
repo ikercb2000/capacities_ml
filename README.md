@@ -225,20 +225,3 @@ poetry run pytest
 
 The tests are organized by package component and include capacities, integrals,
 estimators, optimization, preprocessing, interpretation, finance, and risk functionality.
-
-## Publishing
-
-Releases are published from GitHub Actions through PyPI Trusted Publishing. Before
-the first release, register a pending publisher for `capacities-ml-fin` in PyPI
-using this repository, the `pypi` GitHub environment, and the workflow file
-`publish.yml`.
-
-For every release:
-
-1. Update `version` in `pyproject.toml` and regenerate `poetry.lock`.
-2. Run `poetry run pytest`, `poetry build`, and `poetry run twine check dist/*`.
-3. Commit and push the release changes.
-4. Create and publish a GitHub Release for the new version.
-
-The release workflow repeats the tests, builds the wheel and source distribution,
-validates both artifacts, and publishes them to PyPI without a stored API token.
