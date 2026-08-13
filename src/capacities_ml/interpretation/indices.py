@@ -2,114 +2,236 @@
 from __future__ import annotations
 from itertools import combinations
 from math import factorial
+from numbers import Integral
 from typing import TypeAlias
 import numpy as np
 
 # modules
-from capacities_ml.capacities import (
-    ExplicitCapacity,
-    MobiusRepresentation,
-    mobius_transform,
-)
-from capacities_ml.capacities.utils import normalize_coalition
+from capacities_ml.capacities import BaseCapacity
+
 
 # interpretation aliases
-CapacityLike: TypeAlias = ExplicitCapacity | MobiusRepresentation
+ElementLabel: TypeAlias = int | str
+EventCache: TypeAlias = dict[int, float]
 
 
-# representation conversion
-def _as_mobius(capacity: CapacityLike) -> MobiusRepresentation:
-    if isinstance(capacity, MobiusRepresentation):
-        return capacity
-    if isinstance(capacity, ExplicitCapacity):
-        return mobius_transform(capacity)
-    raise TypeError("Expected an ExplicitCapacity or MobiusRepresentation.")
+# capacity validation
+def _check_capacity(capacity: BaseCapacity) -> None:
+    if not isinstance(capacity, BaseCapacity):
+        raise TypeError("capacity must be a BaseCapacity instance.")
 
 
-# mobius terms
-def _mobius_terms(mobius: MobiusRepresentation):
-    for coefficient in mobius._coefficient_map:
-        if coefficient.coalition:
-            yield coefficient.coalition, coefficient.value
+# element index
+def _element_index(capacity: BaseCapacity, element: ElementLabel) -> int:
+    _check_capacity(capacity)
+    if isinstance(element, str):
+        universe = getattr(capacity, "universe", None)
+        if universe is None:
+            raise TypeError(
+                "String elements require a capacity with a named universe."
+            )
+        try:
+            return int(universe.name_to_index[element])
+        except KeyError as error:
+            raise KeyError(f"Unknown element name: {element}.") from error
+    if isinstance(element, bool) or not isinstance(element, Integral):
+        raise TypeError("element must be an integer index or a variable name.")
+    index = int(element)
+    if not 0 <= index < capacity.n_elements:
+        raise ValueError(
+            f"Element index {index} is invalid for "
+            f"{capacity.n_elements} elements."
+        )
+    return index
 
 
-# feature index
-def _feature_index(capacity: CapacityLike, feature: int | str) -> int:
-    return next(
-        iter(normalize_coalition(capacity.universe, feature))
+# result labels
+def _element_labels(capacity: BaseCapacity) -> tuple[ElementLabel, ...]:
+    var_names = getattr(capacity, "var_names", None)
+    if var_names is None:
+        return tuple(range(capacity.n_elements))
+    labels = tuple(var_names)
+    if len(labels) != capacity.n_elements:
+        raise ValueError("var_names has an incompatible number of elements.")
+    return labels
+
+
+# event evaluation
+def _event_value(
+    capacity: BaseCapacity,
+    mask: int,
+    cache: EventCache,
+) -> float:
+    if mask not in cache:
+        event = np.asarray(
+            [bool(mask & (1 << index)) for index in range(capacity.n_elements)],
+            dtype=bool,
+        )
+        cache[mask] = float(capacity.event_value(event))
+    return cache[mask]
+
+
+# subset masks
+def _subset_masks(
+    n_elements: int,
+    excluded: frozenset[int],
+):
+    remaining = tuple(
+        index for index in range(n_elements) if index not in excluded
     )
+    for local_mask in range(1 << len(remaining)):
+        mask = 0
+        for position, index in enumerate(remaining):
+            if local_mask & (1 << position):
+                mask |= 1 << index
+        yield mask, local_mask.bit_count()
 
 
-# shapley index
-def shapley_index(capacity: CapacityLike, feature: int | str) -> float:
-    """Compute the Shapley importance index of one feature."""
-    index = _feature_index(capacity, feature)
-    mobius = _as_mobius(capacity)
+# internal Shapley index
+def _shapley_index(
+    capacity: BaseCapacity,
+    index: int,
+    cache: EventCache,
+) -> float:
+    n_elements = capacity.n_elements
+    element_mask = 1 << index
+    denominator = factorial(n_elements)
     value = 0.0
-    for coalition, coefficient in _mobius_terms(mobius):
-        if index in coalition:
-            value += coefficient / len(coalition)
+    for mask, size in _subset_masks(n_elements, frozenset({index})):
+        weight = (
+            factorial(size)
+            * factorial(n_elements - size - 1)
+            / denominator
+        )
+        marginal = (
+            _event_value(capacity, mask | element_mask, cache)
+            - _event_value(capacity, mask, cache)
+        )
+        value += weight * marginal
     return float(value)
 
 
-# shapley indices
-def shapley_indices(capacity: CapacityLike) -> dict[str, float]:
-    """Return Shapley importance indexed by variable name."""
+# Shapley index
+def shapley_index(
+    capacity: BaseCapacity,
+    element: ElementLabel,
+) -> float:
+    """Compute one exact Shapley index through event evaluations."""
+    index = _element_index(capacity, element)
+    return _shapley_index(capacity, index, {})
+
+
+# Shapley indices
+def shapley_indices(
+    capacity: BaseCapacity,
+) -> dict[ElementLabel, float]:
+    """Return exact Shapley indices, using names when they are available."""
+    _check_capacity(capacity)
+    labels = _element_labels(capacity)
+    cache: EventCache = {}
     return {
-        name: shapley_index(capacity, index)
-        for index, name in enumerate(capacity.var_names)
+        label: _shapley_index(capacity, index, cache)
+        for index, label in enumerate(labels)
     }
+
+
+# internal pairwise interaction index
+def _pairwise_interaction_index(
+    capacity: BaseCapacity,
+    first: int,
+    second: int,
+    cache: EventCache,
+) -> float:
+    n_elements = capacity.n_elements
+    first_mask = 1 << first
+    second_mask = 1 << second
+    denominator = factorial(n_elements - 1)
+    value = 0.0
+    for mask, size in _subset_masks(
+        n_elements,
+        frozenset({first, second}),
+    ):
+        weight = (
+            factorial(size)
+            * factorial(n_elements - size - 2)
+            / denominator
+        )
+        second_difference = (
+            _event_value(
+                capacity,
+                mask | first_mask | second_mask,
+                cache,
+            )
+            - _event_value(capacity, mask | first_mask, cache)
+            - _event_value(capacity, mask | second_mask, cache)
+            + _event_value(capacity, mask, cache)
+        )
+        value += weight * second_difference
+    return float(value)
 
 
 # pairwise interaction index
 def pairwise_interaction_index(
-    capacity: CapacityLike,
-    first: int | str,
-    second: int | str,
+    capacity: BaseCapacity,
+    first: ElementLabel,
+    second: ElementLabel,
 ) -> float:
-    """Compute the Shapley pairwise interaction index ``I_ij``."""
-    first_index = _feature_index(capacity, first)
-    second_index = _feature_index(capacity, second)
+    """Compute one exact Shapley pairwise interaction from event values."""
+    first_index = _element_index(capacity, first)
+    second_index = _element_index(capacity, second)
     if first_index == second_index:
-        raise ValueError("Pairwise interaction requires two distinct features.")
-
-    mobius = _as_mobius(capacity)
-    value = 0.0
-    for coalition, coefficient in _mobius_terms(mobius):
-        if first_index in coalition and second_index in coalition:
-            value += coefficient / (len(coalition) - 1)
-    return float(value)
+        raise ValueError("Pairwise interaction requires two distinct elements.")
+    return _pairwise_interaction_index(
+        capacity,
+        first_index,
+        second_index,
+        {},
+    )
 
 
 # pairwise interactions
-def pairwise_interactions(capacity: CapacityLike) -> dict[tuple[str, str], float]:
-    """Return all pairwise interaction indices keyed by variable names."""
+def pairwise_interactions(
+    capacity: BaseCapacity,
+) -> dict[tuple[ElementLabel, ElementLabel], float]:
+    """Return all exact pairwise interactions from event evaluations."""
+    _check_capacity(capacity)
+    labels = _element_labels(capacity)
+    cache: EventCache = {}
     return {
-        (capacity.var_names[first], capacity.var_names[second]): pairwise_interaction_index(
+        (labels[first], labels[second]): _pairwise_interaction_index(
             capacity,
             first,
             second,
+            cache,
         )
         for first, second in combinations(range(capacity.n_elements), 2)
     }
 
 
 # pairwise interaction matrix
-def pairwise_interaction_matrix(capacity: CapacityLike) -> np.ndarray:
-    """Return a symmetric matrix of pairwise interaction indices."""
+def pairwise_interaction_matrix(capacity: BaseCapacity) -> np.ndarray:
+    """Return a symmetric matrix of exact pairwise interactions."""
+    _check_capacity(capacity)
     matrix = np.zeros((capacity.n_elements, capacity.n_elements), dtype=float)
-    for (first, second), value in pairwise_interactions(capacity).items():
-        first_index = capacity.universe.name_to_index[first]
-        second_index = capacity.universe.name_to_index[second]
-        matrix[first_index, second_index] = value
-        matrix[second_index, first_index] = value
+    cache: EventCache = {}
+    for first, second in combinations(range(capacity.n_elements), 2):
+        value = _pairwise_interaction_index(
+            capacity,
+            first,
+            second,
+            cache,
+        )
+        matrix[first, second] = value
+        matrix[second, first] = value
     return matrix
 
 
 # interaction signs
-def interaction_signs(capacity: CapacityLike) -> dict[tuple[str, str], int]:
-    """Classify pairwise interactions as redundant, neutral or complementary."""
+def interaction_signs(
+    capacity: BaseCapacity,
+) -> dict[tuple[ElementLabel, ElementLabel], int]:
+    """Classify interactions as redundant, neutral or complementary."""
     return {
-        pair: int(np.sign(value))
+        pair: 0 if np.isclose(value, 0.0, atol=1e-12) else int(np.sign(value))
         for pair, value in pairwise_interactions(capacity).items()
     }
