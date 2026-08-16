@@ -25,17 +25,6 @@ Probabilistic binary Choquet classifier with latent utility $C_\mu(x)$ and logis
 
 ::: capacities_ml_fin.ml.models.classification.choquistic.ChoquisticRegression
 
-## `ChoquetNeuralRegressor`
-
-One-hidden-layer regressor with one learned capacity per Choquet hidden unit.
-
-::: capacities_ml_fin.ml.models.neural.choquet.ChoquetNeuralRegressor
-
-## `ChoquetNeuralClassifier`
-
-Binary neural classifier with a hidden layer of Choquet neurons and a logistic output interpretation.
-
-::: capacities_ml_fin.ml.models.neural.choquet.ChoquetNeuralClassifier
 
 ## `ChoquetAutoRegressor`
 

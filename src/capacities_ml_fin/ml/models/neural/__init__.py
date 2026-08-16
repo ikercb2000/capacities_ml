@@ -1,8 +1,11 @@
-"""Neural Choquet models and layers."""
-
-from capacities_ml_fin.ml.models.neural.choquet import (
-    ChoquetNeuralClassifier,
-    ChoquetNeuralRegressor,
+from capacities_ml_fin.ml.models.neural.fuzzy import (
+    FuzzyChoquetInputLayer,
+    FuzzyChoquetNeuralClassifier,
+    FuzzyChoquetNeuralRegressor,
 )
 
-__all__ = ["ChoquetNeuralClassifier", "ChoquetNeuralRegressor"]
+__all__ = [
+    "FuzzyChoquetInputLayer",
+    "FuzzyChoquetNeuralClassifier",
+    "FuzzyChoquetNeuralRegressor",
+]

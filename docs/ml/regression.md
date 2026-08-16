@@ -72,6 +72,29 @@ regressor.fit(X_train, y_train)
 y_pred = regressor.predict(X_test)
 ```
 
+### Removing the intercept
+
+`fit_intercept=True` remains the default and preserves the standard model
+$\widehat y=\beta_0+C_\mu(x)$. Set `fit_intercept=False` when the Choquet
+integral must be the complete prediction:
+
+\[
+\widehat y=C_\mu(x).
+\]
+
+```python
+model_without_intercept = ChoquetRegressor(
+    sparsity=KAdditivity(order=2),
+    fit_intercept=False,
+).fit(X_train, y_train)
+
+assert model_without_intercept.intercept_ == 0.0
+```
+
+This form is used internally by
+[`aggregate_regression_predictions`](model_aggregation.md), where the capacity
+elements are models and the inputs are their predictions.
+
 After fitting, important attributes include:
 
 - `capacity_` — decoded learned capacity;

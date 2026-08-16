@@ -174,8 +174,9 @@ Rolling forecasts are aligned so that the capital assigned to date $t$ is calcul
 | Continuous supervised prediction | `ChoquetRegressor` |
 | Hard binary classification | `ChoquetClassifier` |
 | Probabilistic binary classification | `ChoquisticRegression` |
-| Nonlinear hidden-layer model | `ChoquetNeuralRegressor`, `ChoquetNeuralClassifier` |
-| Forecast a univariate series | `ChoquetAutoRegressor` |
+| Fuzzy-input neural model | `FuzzyChoquetNeuralRegressor`, `FuzzyChoquetNeuralClassifier` |
+| Aggregate model predictions | `aggregate_regression_predictions`, `aggregate_binary_probabilities` |
+| Forecast a univariate series | `ChoquetAutoRegressor`, `FuzzyChoquetNeuralAutoRegressor` |
 | Normalize/orient criteria | `CapacityNormalizer` |
 | Build point-in-time financial datasets | `point_in_time_join` |
 | Distortion risk | `DistortionRiskMeasure`, `distortion_risk_measure` |

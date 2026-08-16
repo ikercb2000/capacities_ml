@@ -10,10 +10,13 @@ def regression_predictor(
     *,
     design: np.ndarray,
     capacity_slice: slice,
-    intercept_slice: slice,
+    intercept_slice: slice | None,
 ) -> Any:
     """Evaluate a Choquet regression parameter vector."""
-    return design @ parameters[capacity_slice] + parameters[intercept_slice][0]
+    prediction = design @ parameters[capacity_slice]
+    if intercept_slice is not None:
+        prediction = prediction + parameters[intercept_slice][0]
+    return prediction
 
 
 # scaled Choquet regression prediction callback

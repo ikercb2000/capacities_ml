@@ -122,8 +122,11 @@ The available estimators are:
   through `decision_function()`; it intentionally has no `predict_proba()`.
 - `ChoquisticRegression` for probabilistic binary classification.
 - `ChoquetAutoRegressor` for nonlinear autoregressive forecasting.
-- `ChoquetNeuralRegressor` and `ChoquetNeuralClassifier` for models with a
-  hidden layer of Choquet neurons.
+- `FuzzyChoquetInputLayer` for a reusable supervised Choquet transformation.
+- `FuzzyChoquetNeuralRegressor` and `FuzzyChoquetNeuralClassifier` for
+  conventional neural models fed by a supervised Choquet input layer.
+- `FuzzyChoquetNeuralAutoRegressor` for paper-style fuzzy neural forecasting
+  with chronological selection from 2 to 8 lags by default.
 
 Predictors should normally be oriented and normalized before fitting. The
 `CapacityNormalizer` scales inputs and reverses cost criteria so that larger
@@ -132,6 +135,48 @@ transformed values always have the same interpretation.
 Capacity complexity can be controlled with full, k-additive, or selected-pair
 representations. L1 and L2 penalties are available, and the model-selection module
 provides grids that can be passed directly to scikit-learn search objects.
+
+## Aggregate predictions from several models
+
+The aggregation API learns a capacity whose elements are source models and whose
+inputs are their predictions. Regression uses the Choquet integral directly,
+while binary classification combines positive-class probabilities through a
+Choquistic link.
+
+```python
+import pandas as pd
+
+from capacities_ml_fin import aggregate_regression_predictions
+from capacities_ml_fin.base.interpretation import (
+    pairwise_interactions,
+    shapley_indices,
+)
+from capacities_ml_fin.ml.optimization import KAdditivity
+
+fit_predictions = pd.DataFrame(
+    {"ridge": ridge_oof, "forest": forest_oof, "boosting": boosting_oof}
+)
+test_predictions = pd.DataFrame(
+    {"ridge": ridge_test, "forest": forest_test, "boosting": boosting_test}
+)
+
+result = aggregate_regression_predictions(
+    fit_predictions,
+    y_fit,
+    test_predictions,
+    sparsity=KAdditivity(order=2),
+)
+
+final_predictions = result.predictions
+model_importance = shapley_indices(result.capacity)
+model_interactions = pairwise_interactions(result.capacity)
+```
+
+Use `aggregate_binary_probabilities(...)` for binary positive-class
+probabilities. DataFrame columns become model names in the learned capacity, so
+Shapley values and pairwise interactions directly describe importance,
+complementarity, and redundancy between models. Fit the aggregator on honest
+out-of-fold or validation predictions rather than in-sample source predictions.
 
 ## Time-series models
 
@@ -160,6 +205,23 @@ The model exposes one-step training fitted values, residuals, AIC, BIC, and a
 stationary contraction constraint. Input `y` should use a supported pandas time
 index; when exogenous data are used, `X` must be indexed at the same dates and
 must cover every recursive future step.
+
+`FuzzyChoquetNeuralAutoRegressor` provides the paper-style alternative. It
+normalizes lag windows, learns a 2-additive fuzzy input, feeds it to a tanh
+network, and selects the best lag order chronologically:
+
+```python
+from capacities_ml_fin import FuzzyChoquetNeuralAutoRegressor
+
+fuzzy_forecaster = FuzzyChoquetNeuralAutoRegressor(
+    lag_candidates=tuple(range(2, 9)),
+    random_state=0,
+).fit(y_train)
+
+fuzzy_forecaster.best_lag_
+fuzzy_forecaster.lag_scores_
+fuzzy_forecast = fuzzy_forecaster.predict(fh=[1, 2, 3])
+```
 
 ## Risk measures
 

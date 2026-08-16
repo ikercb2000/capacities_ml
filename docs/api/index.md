@@ -17,9 +17,13 @@ from capacities_ml_fin import (
     ScaledChoquetRegressor,
     ChoquetClassifier,
     ChoquisticRegression,
-    ChoquetNeuralRegressor,
-    ChoquetNeuralClassifier,
+    FuzzyChoquetInputLayer,
+    FuzzyChoquetNeuralRegressor,
+    FuzzyChoquetNeuralClassifier,
+    FuzzyChoquetNeuralAutoRegressor,
     ChoquetAutoRegressor,
+    aggregate_regression_predictions,
+    aggregate_binary_probabilities,
 )
 ```
 
@@ -39,6 +43,8 @@ from capacities_ml_fin.risk import ExpectedShortfallDistortion
 - [Integrals](integrals.md)
 - [Interpretation](interpretation.md)
 - [ML models](ml_models.md)
+- [Fuzzy neural models](fuzzy_neural.md)
+- [Model aggregation](model_aggregation.md)
 - [Optimization](optimization.md)
 - [Preprocessing & model selection](preprocessing_model_selection.md)
 - [Finance](finance.md)

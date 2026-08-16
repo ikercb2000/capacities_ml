@@ -6,10 +6,10 @@ from sklearn.utils.estimator_checks import (
 
 from capacities_ml_fin.ml.models import (
     ChoquetClassifier,
-    ChoquetNeuralClassifier,
-    ChoquetNeuralRegressor,
     ChoquetRegressor,
     ChoquisticRegression,
+    FuzzyChoquetNeuralClassifier,
+    FuzzyChoquetNeuralRegressor,
     ScaledChoquetRegressor,
 )
 
@@ -17,8 +17,8 @@ ESTIMATORS = (
     ChoquetRegressor(),
     ChoquetClassifier(),
     ChoquisticRegression(),
-    ChoquetNeuralRegressor(),
-    ChoquetNeuralClassifier(),
+    FuzzyChoquetNeuralRegressor(),
+    FuzzyChoquetNeuralClassifier(),
     ScaledChoquetRegressor(),
 )
 
@@ -43,9 +43,3 @@ def test_classifier_tags_describe_binary_normalized_inputs():
 
 def test_stochastic_estimators_report_non_determinism_without_a_seed():
     assert ChoquetClassifier().__sklearn_tags__().non_deterministic is True
-    assert ChoquetNeuralRegressor().__sklearn_tags__().non_deterministic is True
-    assert ChoquetNeuralClassifier().__sklearn_tags__().non_deterministic is True
-    assert (
-        ChoquetNeuralClassifier(random_state=0).__sklearn_tags__().non_deterministic
-        is False
-    )

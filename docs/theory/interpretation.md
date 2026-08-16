@@ -102,7 +102,6 @@ interactions = pairwise_interactions(model.capacity_)
 
 For `ChoquetAutoRegressor`, the feature names are automatically created as `lag_1`, `lag_2`, ..., making the Shapley indices interpretable as lag importance.
 
-For `ChoquetNeuralRegressor` and `ChoquetNeuralClassifier`, there is one learned capacity per hidden unit, exposed through `capacities_`; interpret each capacity separately.
 
 ## Complexity
 

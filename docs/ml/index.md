@@ -10,9 +10,12 @@ The machine-learning layer learns capacities from data while preserving the scik
 | Scaled continuous regression | `ScaledChoquetRegressor` | $c + qC_\mu(x)$ |
 | Deterministic binary classification | `ChoquetClassifier` | hard class label and signed margin |
 | Probabilistic binary classification | `ChoquisticRegression` | class probabilities and log-odds |
-| Nonlinear continuous prediction | `ChoquetNeuralRegressor` | one-hidden-layer neural output |
-| Nonlinear binary classification | `ChoquetNeuralClassifier` | logits and probabilities |
+| Supervised fuzzy transformation | `FuzzyChoquetInputLayer` | scalar Choquet input |
+| Fuzzy-input continuous prediction | `FuzzyChoquetNeuralRegressor` | tanh neural output |
+| Fuzzy-input binary classification | `FuzzyChoquetNeuralClassifier` | class probabilities |
+| Model-output aggregation | `aggregate_regression_predictions`, `aggregate_binary_probabilities` | ensemble prediction/probability |
 | Univariate forecasting | `ChoquetAutoRegressor` | recursive sktime forecasts and intervals |
+| Fuzzy neural forecasting | `FuzzyChoquetNeuralAutoRegressor` | recursive forecast after lag selection |
 
 All supervised scikit-learn estimators infer feature names from DataFrame columns when available. Otherwise, the fitted variable universe uses generated names `x0`, `x1`, ... .
 

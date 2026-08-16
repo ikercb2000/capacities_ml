@@ -55,7 +55,8 @@ nav:
       - Overview: ml/index.md
       - Regression: ml/regression.md
       - Classification: ml/classification.md
-      - Neural models: ml/neural.md
+      - Fuzzy neural input: ml/fuzzy_neural.md
+      - Model aggregation: ml/model_aggregation.md
       - Time series: ml/time_series.md
       - Optimization: ml/optimization.md
       - Preprocessing & model selection: ml/preprocessing_model_selection.md
@@ -90,6 +91,8 @@ nav:
       - Integrals: api/integrals.md
       - Interpretation: api/interpretation.md
       - ML models: api/ml_models.md
+      - Fuzzy neural API: api/fuzzy_neural.md
+      - Model aggregation API: api/model_aggregation.md
       - Optimization: api/optimization.md
       - Preprocessing & model selection: api/preprocessing_model_selection.md
       - Finance: api/finance.md

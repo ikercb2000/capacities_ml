@@ -48,6 +48,10 @@ class ChoquetRegressor(RegressorMixin, BaseEstimator):
         Keyword arguments forwarded to the selected backend.
     penalty : callable or penalty object, optional
         Regularization term added to the squared-error objective.
+    fit_intercept : bool, default=True
+        Whether to learn an unconstrained additive intercept. Set to ``False``
+        when the Choquet integral itself must be the complete prediction, as in
+        model aggregation.
 
     Attributes
     ----------
@@ -78,11 +82,13 @@ class ChoquetRegressor(RegressorMixin, BaseEstimator):
         solver: Solver | str = "scipy",
         solver_options: dict[str, Any] | None = None,
         penalty: Any = None,
+        fit_intercept: bool = True,
     ) -> None:
         self.sparsity = sparsity
         self.solver = solver
         self.solver_options = solver_options
         self.penalty = penalty
+        self.fit_intercept = fit_intercept
 
     def fit(self, X: ArrayLike, y: ArrayLike) -> "ChoquetRegressor":
         """Fit the capacity and the regression intercept."""
@@ -98,6 +104,8 @@ class ChoquetRegressor(RegressorMixin, BaseEstimator):
         target = np.asarray(target, dtype=float).reshape(-1)
         if not np.all(np.isfinite(target)):
             raise ValueError("y must contain only finite values.")
+        if not isinstance(self.fit_intercept, (bool, np.bool_)):
+            raise TypeError("fit_intercept must be boolean.")
         self.solver_ = resolve_solver(self.solver)
 
         sparsity = self.sparsity if self.sparsity is not None else FullCapacity()
@@ -109,12 +117,12 @@ class ChoquetRegressor(RegressorMixin, BaseEstimator):
         )
         capacity_initial = compilation.initial_parameters
         intercept_initial = float(np.mean(target - design @ capacity_initial))
-        layout = ParameterLayout(
-            ParameterBlock("capacity", compilation.bundle.n_parameters),
-            ParameterBlock("intercept", 1),
-        )
+        blocks = [ParameterBlock("capacity", compilation.bundle.n_parameters)]
+        if self.fit_intercept:
+            blocks.append(ParameterBlock("intercept", 1))
+        layout = ParameterLayout(*blocks)
         capacity_slice = layout.slice("capacity")
-        intercept_slice = layout.slice("intercept")
+        intercept_slice = layout.slice("intercept") if self.fit_intercept else None
 
         predictor = partial(
             regression_predictor,
@@ -134,8 +142,10 @@ class ChoquetRegressor(RegressorMixin, BaseEstimator):
             objective=objective,
             sparsity=sparsity,
             parameter_layout=layout,
-            initial_parameters=np.concatenate(
-                [capacity_initial, np.array([intercept_initial])]
+            initial_parameters=(
+                np.concatenate([capacity_initial, np.array([intercept_initial])])
+                if self.fit_intercept
+                else capacity_initial
             ),
             name="choquet_regression",
         )
@@ -149,7 +159,11 @@ class ChoquetRegressor(RegressorMixin, BaseEstimator):
         self.problem_ = problem
         self.result_ = result
         self.capacity_ = problem.decode_result(result)
-        self.intercept_ = float(result.parameters[intercept_slice][0])
+        self.intercept_ = (
+            float(result.parameters[intercept_slice][0])
+            if intercept_slice is not None
+            else 0.0
+        )
         self.sparsity_ = sparsity
         return self
 
