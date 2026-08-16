@@ -7,6 +7,7 @@ from capacities_ml_fin.ml.models import (
     ChoquetNeuralRegressor,
     ChoquetRegressor,
     ChoquisticRegression,
+    ScaledChoquetRegressor,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "ChoquetNeuralRegressor",
     "ChoquetRegressor",
     "ChoquisticRegression",
+    "ScaledChoquetRegressor",
 ]

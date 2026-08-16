@@ -7,6 +7,7 @@ The machine-learning layer learns capacities from data while preserving the scik
 | Task | Estimator | Output |
 |---|---|---|
 | Continuous regression | `ChoquetRegressor` | real-valued prediction |
+| Scaled continuous regression | `ScaledChoquetRegressor` | $c + qC_\mu(x)$ |
 | Deterministic binary classification | `ChoquetClassifier` | hard class label and signed margin |
 | Probabilistic binary classification | `ChoquisticRegression` | class probabilities and log-odds |
 | Nonlinear continuous prediction | `ChoquetNeuralRegressor` | one-hidden-layer neural output |

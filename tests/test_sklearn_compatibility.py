@@ -10,8 +10,8 @@ from capacities_ml_fin.ml.models import (
     ChoquetNeuralRegressor,
     ChoquetRegressor,
     ChoquisticRegression,
+    ScaledChoquetRegressor,
 )
-
 
 ESTIMATORS = (
     ChoquetRegressor(),
@@ -19,6 +19,7 @@ ESTIMATORS = (
     ChoquisticRegression(),
     ChoquetNeuralRegressor(),
     ChoquetNeuralClassifier(),
+    ScaledChoquetRegressor(),
 )
 
 
@@ -45,8 +46,6 @@ def test_stochastic_estimators_report_non_determinism_without_a_seed():
     assert ChoquetNeuralRegressor().__sklearn_tags__().non_deterministic is True
     assert ChoquetNeuralClassifier().__sklearn_tags__().non_deterministic is True
     assert (
-        ChoquetNeuralClassifier(random_state=0)
-        .__sklearn_tags__()
-        .non_deterministic
+        ChoquetNeuralClassifier(random_state=0).__sklearn_tags__().non_deterministic
         is False
     )

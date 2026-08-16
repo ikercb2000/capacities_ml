@@ -14,6 +14,7 @@ The package root intentionally exports the main fitted estimators:
 ```python
 from capacities_ml_fin import (
     ChoquetRegressor,
+    ScaledChoquetRegressor,
     ChoquetClassifier,
     ChoquisticRegression,
     ChoquetNeuralRegressor,

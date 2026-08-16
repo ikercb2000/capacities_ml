@@ -6,6 +6,13 @@ Least-squares scikit-learn regressor with a learned capacity and separate interc
 
 ::: capacities_ml_fin.ml.models.regression.choquet.ChoquetRegressor
 
+## `ScaledChoquetRegressor`
+
+Scaled Choquet regression $c + qC_\mu(x)$ with a normalized monotone capacity,
+a learned intercept, and configurable bounds on $q$.
+
+::: capacities_ml_fin.ml.models.regression.choquet.ScaledChoquetRegressor
+
 ## `ChoquetClassifier`
 
 Deterministic binary threshold classifier. Inputs must lie in $[0,1]$ and be oriented so larger values favor the positive class. It exposes `choquet_score()` and `decision_function()` but intentionally no `predict_proba()`.

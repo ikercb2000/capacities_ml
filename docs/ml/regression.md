@@ -16,6 +16,47 @@ where $C_\mu$ is the discrete Choquet integral and $\mu$ is learned subject to t
 
 The default sparsity is `FullCapacity()`. In most empirical applications with more than a few features, a low-order Möbius representation such as `KAdditivity(order=2)` is easier to estimate and interpret.
 
+### Scaled model with $q$
+
+`ScaledChoquetRegressor` adds the model described by Grabisch after Wang et al.
+without changing or replacing `ChoquetRegressor`:
+
+\[
+\widehat y = c + q C_\mu(x).
+\]
+
+The capacity constraints are unchanged: $\mu(\varnothing)=0$,
+$\mu(N)=1$, and $\mu(A)\leq\mu(B)$ whenever $A\subseteq B$, together with
+any selected sparsity constraints. The default `q_bounds=(0, np.inf)` adds
+$q\geq0$, so the complete fitted function remains increasing in every
+criterion. Set `q_bounds=(-np.inf, np.inf)` only when a decreasing aggregate is
+intended.
+
+```python
+from capacities_ml_fin.ml.models import ScaledChoquetRegressor
+from capacities_ml_fin.ml.optimization import KAdditivity
+
+regressor = ScaledChoquetRegressor(
+    sparsity=KAdditivity(order=2),
+    q_bounds=(0.0, 10.0),
+)
+regressor.fit(X_train, y_train)
+
+regressor.q_
+regressor.intercept_
+```
+
+For the initial feasible capacity, $q$ and $c$ are estimated by ordinary least
+squares as proposed for the paper's submodels. The estimator then jointly
+minimizes squared error over $\mu$, $q$, and $c$. Because $qC_\mu$ is bilinear
+in the learned parameters, this joint problem is non-convex: SciPy and PYMOO
+are supported, while CVXPY is rejected explicitly. Normalization of $\mu$
+removes the otherwise immediate scale indeterminacy between $q$ and $\mu$.
+
+As with every Choquet model, the predictors must be commensurable; adding $q$
+rescales the aggregate output but does not make criteria with unrelated units
+commensurable.
+
 ## Basic usage
 
 ```python
