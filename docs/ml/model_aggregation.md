@@ -53,6 +53,7 @@ result = aggregate_binary_probabilities(
     test_positive_probabilities,
     sparsity=KAdditivity(order=2),
     class_weight="balanced",
+    softmax_scale=3.0,
 )
 
 positive_probability = result.probabilities
@@ -60,9 +61,26 @@ print(result.positive_class)
 ```
 
 Each column must contain the probability of the same positive class and all
-values must lie in `[0, 1]`. This first implementation uses
-`ChoquisticRegression`; multiclass aggregation and specialized literature
-methods are intentionally outside its scope.
+values must already lie in `[0, 1]`; no min-max normalization is applied. For
+the input matrix \(p\), the same fitted normalized monotone capacity \(\nu\) is
+used for both classes:
+
+\[
+a_1 = C_\nu(p), \qquad a_0 = C_\nu(1-p).
+\]
+
+The returned positive-class probability is the binary Softmax
+
+\[
+\sigma\!\left(c(a_1-a_0)\right),
+\]
+
+where `c` is `softmax_scale` and defaults to `3.0`. Only the capacity parameters
+are learned; there are no Choquistic `beta` or `gamma` parameters in this
+aggregation procedure. This class-wise, shared-capacity formulation is inspired
+by Uriz et al. (2023), *A supervised fuzzy measure learning algorithm for
+combining classifiers*, while using this package's own constrained optimization
+framework.
 
 ## Named models and interpretation
 
@@ -87,4 +105,3 @@ The returned Shapley values and interactions therefore describe models:
 
 Both result objects also expose `model_names`, `optimization_result`, and
 `fitted_model` for diagnostics and reproducibility.
-

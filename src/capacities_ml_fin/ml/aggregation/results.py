@@ -27,7 +27,7 @@ class RegressionAggregationResult:
 # binary probability aggregation result
 @dataclass(frozen=True, slots=True)
 class BinaryProbabilityAggregationResult:
-    """Positive-class probabilities and fitted Choquistic aggregation state."""
+    """Probabilities and fitted shared-capacity Choquet aggregation state."""
 
     probabilities: NDArray[np.float64]
     capacity: BaseCapacity

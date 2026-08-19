@@ -12,7 +12,9 @@ from capacities_ml_fin.ml.aggregation.results import (
     BinaryProbabilityAggregationResult,
     RegressionAggregationResult,
 )
-from capacities_ml_fin.ml.models.classification import ChoquisticRegression
+from capacities_ml_fin.ml.aggregation.shared_capacity import (
+    SharedCapacityBinaryAggregator,
+)
 from capacities_ml_fin.ml.models.regression import ChoquetRegressor
 from capacities_ml_fin.ml.optimization import Solver
 from capacities_ml_fin.ml.optimization.sparsity import CapacitySparsity
@@ -67,12 +69,19 @@ def aggregate_binary_probabilities(
     class_weight: dict[Any, float] | str | None = None,
     sample_weight: ArrayLike | None = None,
     solver: Solver | str = "scipy",
+    softmax_scale: float = 3.0,
 ) -> BinaryProbabilityAggregationResult:
-    """Learn a capacity over binary classifiers' positive probabilities.
+    """Learn one shared capacity over binary classifiers' probabilities.
 
     Every matrix column must contain the probability of the same positive
-    class from one source model. The positive class in the result is the second
-    class according to scikit-learn's deterministic label ordering.
+    class from one source model and must already lie in ``[0, 1]``. Internally,
+    ``p`` and ``1 - p`` are aggregated class-wise with the same normalized
+    monotone capacity. A two-class Softmax with ``softmax_scale`` converts the
+    two Choquet scores to probabilities. The positive class in the result is
+    the second class according to scikit-learn's deterministic label ordering.
+
+    This shared-capacity formulation is inspired by Uriz et al. (2023), while
+    retaining the package's constrained capacity optimization framework.
     """
     fit_input, predict_input, model_names = _validated_prediction_pair(
         fit_probabilities,
@@ -80,11 +89,12 @@ def aggregate_binary_probabilities(
         probabilities=True,
     )
     target = _validated_binary_target(y_fit, len(fit_input))
-    model = ChoquisticRegression(
+    model = SharedCapacityBinaryAggregator(
         sparsity=sparsity,
         penalty=penalty,
         class_weight=class_weight,
         solver=solver,
+        softmax_scale=softmax_scale,
     ).fit(fit_input, target, sample_weight=sample_weight)
     probabilities = np.asarray(model.predict_proba(predict_input)[:, 1], dtype=float)
     return BinaryProbabilityAggregationResult(

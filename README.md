@@ -172,7 +172,8 @@ model_importance = shapley_indices(result.capacity)
 model_interactions = pairwise_interactions(result.capacity)
 ```
 
-Use `aggregate_binary_probabilities(...)` for binary positive-class
+Use `aggregate_binary_probabilities(...)` for shared-capacity, class-wise
+binary positive-class
 probabilities. DataFrame columns become model names in the learned capacity, so
 Shapley values and pairwise interactions directly describe importance,
 complementarity, and redundancy between models. Fit the aggregator on honest
