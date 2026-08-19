@@ -1,6 +1,6 @@
 [project]
 name = "capacities-ml-fin"
-version = "0.2.0"
+version = "0.3.0"
 description = "Capacities, Choquet machine learning, and non-additive financial risk measures."
 authors = [
     {name = "ikercb2000", email = "ikercb2000@gmail.com"}
